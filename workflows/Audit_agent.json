@@ -1,0 +1,863 @@
+{
+  "name": "Audit_agent",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "test",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Web site URL",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        -368,
+        -16
+      ],
+      "id": "ba926710-1a81-4a8f-ab77-9b3155771884",
+      "name": "On form submission",
+      "webhookId": "d3510312-ec09-4c05-9384-7fb3c735975f"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $('AI Agent').first().json.output;\n\n// ─── Sub-section parser (e.g. CRITICAL / HIGH / MEDIUM / LOW blocks) ───────\nfunction parseSubSections(content) {\n  const result = {};\n  let currentKey = null;\n  let currentItems = [];\n\n  for (const line of content.split('\\n')) {\n    const trimmed = line.trim();\n    if (!trimmed) continue;\n\n    // Header = ALL-CAPS word(s) followed by a colon, nothing else on the line\n    const headerMatch = trimmed.match(/^([A-Z][A-Z\\s]{1,30}):\\s*$/);\n    if (headerMatch) {\n      if (currentKey !== null) result[currentKey.toLowerCase()] = currentItems;\n      currentKey = headerMatch[1].trim();\n      currentItems = [];\n    } else if (currentKey !== null) {\n      // Numbered item  →  \"1. Some text\"\n      const numberedMatch = trimmed.match(/^\\d+\\.\\s+(.+)/);\n      if (numberedMatch) currentItems.push(numberedMatch[1]);\n    }\n  }\n\n  if (currentKey !== null) result[currentKey.toLowerCase()] = currentItems;\n  return Object.keys(result).length > 0 ? result : null;\n}\n\n// ─── Generic content parser ──────────────────────────────────────────────────\nfunction parseContent(content) {\n  if (!content) return '';\n\n  // 1. Try sub-section blocks first (ALL-CAPS headings)\n  const subSections = parseSubSections(content);\n  if (subSections) return subSections;\n\n  // 2. Numbered list  →  array\n  const numbered = content\n    .split('\\n')\n    .map(l => l.trim())\n    .filter(l => /^\\d+\\.\\s+/.test(l))\n    .map(l => l.replace(/^\\d+\\.\\s+/, ''));\n  if (numbered.length > 0) return numbered;\n\n  // 3. Bullet list  →  array\n  const bullets = content\n    .split('\\n')\n    .map(l => l.trim())\n    .filter(l => /^[•\\-\\*]\\s/.test(l))\n    .map(l => l.replace(/^[•\\-\\*]\\s*/, ''));\n  if (bullets.length > 0) return bullets;\n\n  // 4. Plain text — collapse extra whitespace\n  return content.replace(/[ \\t]+/g, ' ').replace(/\\n{2,}/g, '\\n').trim();\n}\n\n// ─── Master parser ───────────────────────────────────────────────────────────\nfunction parseAIOutput(rawText) {\n  const result = {};\n\n  // Normalize literal \"\\n\" strings AND strip trailing whitespace per line\n  const text = rawText\n    .replace(/\\\\n/g, '\\n')          // literal \\n → real newline\n    .replace(/[ \\t]+$/gm, '');      // trailing spaces per line\n\n  /*\n    Matches section markers in these formats:\n      **--Title--**\n      **--Bold title: Title--**\n      **--Title--**   (no ** wrappers, fallback)\n  */\n  const sectionRegex = /(?:\\*\\*)?--([\\s\\S]*?)--(?:\\*\\*)?/g;\n\n  const sections = [];\n  let m;\n  while ((m = sectionRegex.exec(text)) !== null) {\n    sections.push({\n      title: m[1].trim(),\n      index: m.index,\n      endIndex: m.index + m[0].length\n    });\n  }\n\n  sections.forEach((section, i) => {\n    const nextIndex = sections[i + 1]?.index ?? text.length;\n    const content = text.slice(section.endIndex, nextIndex).trim();\n\n    // ── Derive clean title ─────────────────────────────────────────────────\n    let rawTitle = section.title;\n\n    // Strip \"Bold title: \" prefix  →  \"Bold title: UX Issues\"  →  \"UX Issues\"\n    rawTitle = rawTitle.replace(/^Bold\\s+title:\\s*/i, '').trim();\n\n    // Build snake_case key\n    const key = rawTitle\n      .toLowerCase()\n      .replace(/[^\\w\\s]/g, '')      // remove punctuation\n      .replace(/\\s+/g, '_')         // spaces → underscore\n      .replace(/_{2,}/g, '_')       // collapse double underscores\n      .replace(/^_|_$/g, '');       // trim leading/trailing underscores\n\n    if (!key) return;               // skip empty/malformed markers\n\n    result[key] = parseContent(content);\n  });\n\n  return result;\n}\n\n// ─── n8n entry point ─────────────────────────────────────────────────────────\nreturn items.map(item => {\n  const text = item.json.output || item.json.text || '';\n  return {\n    json: {\n      parsed: parseAIOutput(text)\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2208,
+        400
+      ],
+      "id": "d1202933-5676-44d6-904c-4a2f3aa748f8",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "const DOC_COntent = \"audit  générale de : \";\nconst URL =$('On form submission').first().json['Web site URL'] ;\nreturn [\n  {\n    json: {\n      doc_title: `${URL}${DOC_COntent}`\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2560,
+        384
+      ],
+      "id": "6d711dd8-cf5b-4d73-b5c0-387d2d95477d",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "19362bc8-8205-49db-ae9f-60c8620f6b2e",
+              "name": "URL",
+              "value": "={{ $json['Web site URL'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -160,
+        -16
+      ],
+      "id": "fbc41b73-a635-49cd-8a4f-cc9adf0c93ac",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Step 1 — Browse this URL now: {{ $json.URL }}\nFetch the full page. Inspect structure, navigation, interactive elements, forms, and user journeys.\n\nStep 2 — Return ONLY ux_issues and ui_issues. Focus on:\n- Friction points and broken flows\n- Missing feedback states (loading, empty, error)\n- Navigation clarity and hover-only interactions\n- Form interactions and validation UX\n- Touch targets, focus management, visual hierarchy\n- Inconsistent controls, color contrast, layout breaks\n\nNo tables. No extra text. Only the 2 sections.",
+        "options": {
+          "systemMessage": "You are a senior UX/Product auditor. Before any analysis, you MUST fetch and fully browse the URL provided by the user.\n\nSTRICT OUTPUT RULES — NO EXCEPTIONS:\n- NEVER generate tables.\n- NEVER add intro, commentary, preamble, or closing text.\n- Output ONLY these 2 sections, in this exact order, with these exact labels.\n- Each issue: **Bold title**: description\n- If no findings: \"No issues detected in this pass.\"\n--UX Issues--\n--UI Issues--\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        288,
+        -16
+      ],
+      "id": "72294da8-cb05-4cc6-a228-4f7cab4a5c4b",
+      "name": "UX & User Flow Auditor"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Below are the partial audit results from 5 specialized agents.\nInject each section as-is into the correct place in the master report.\nThen write --Overview--, --recommanded_fixes--, and --final_assessment-- by synthesizing all findings.\nDeduplicate any overlapping issues. Re-rank --recommanded_fixes-- CRITICAL → HIGH → MEDIUM → LOW.\n\n--ux_issues & ui_issues--\n{{ $('UX & User Flow Auditor').item.json.output }}\n\n--titles_audit & product_names_audit--\n{{ $('Titles & Product Names Verifier').item.json.output }}\n\n--photos_audit--\n{{ $('Photos & Visuals Verifier').item.json.output }}\n\n--descriptions_audit--\n{{ $('Descriptions & Text Content Verifier').item.json.output }}\n\n--categories_audit--\n{{ $json.output }}\n\nProduce the full 9-section master report. No tables. No extra text.",
+        "options": {
+          "systemMessage": "You are a lead content and technical auditor. You receive partial audit sections from 5 specialized agents. Your job is to merge them into one complete unified master report.\n\nSTRICT OUTPUT RULES — NO EXCEPTIONS:\n- NEVER generate tables.\n- NEVER add intro, commentary, preamble, or closing text.\n- Output ONLY these 9 sections, in this exact order, with these exact labels.\n- Each issue: **Bold title**: description\n- For --recommanded_fixes--: group under CRITICAL / HIGH / MEDIUM / LOW with numbered items.\n- For --Overview-- and --final_assessment--: write a concise analytical paragraph.\n- If a section has no findings: \"No issues detected in this pass.\"\n\n--Overview--\n--ux_issues--\n--ui_issues--\n--titles_audit--\n--photos_audit--\n--descriptions_audit--\n--categories_audit--\n--recommanded_fixes--\n--final_assessment--"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1408,
+        576
+      ],
+      "id": "129c4d01-13fa-4d3d-892b-38be1eff345e",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1392,
+        448
+      ],
+      "id": "c6352158-c25c-48dd-9b00-5edf2dda0bda",
+      "name": "OpenRouter Chat Model5",
+      "credentials": {
+        "openRouterApi": {
+          "id": "4AeXjE10gb60YVZw",
+          "name": "OpenRouter account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        288,
+        -112
+      ],
+      "id": "711a0ad3-b0c4-4c51-b1a3-08e001816986",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GRDqounhRtPTcmsJ",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        304,
+        96
+      ],
+      "id": "989dab83-d408-41d4-9742-5afa86a9a7d9",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "asxYy00fo47lj69t",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        336,
+        448
+      ],
+      "id": "b8c43f9c-8f4c-4771-b5a2-fd5f3fa6d156",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "J9bhPgTtl8rZBUXS",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        720,
+        464
+      ],
+      "id": "c3e46a4f-9c94-49a9-998c-e085fa4df416",
+      "name": "Google Gemini Chat Model3",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GRDqounhRtPTcmsJ",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        464
+      ],
+      "id": "288ef04e-20d1-4ab6-997e-535711c843a6",
+      "name": "Google Gemini Chat Model4",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "q7rWQhxWv8kR6PlN",
+          "name": "Google Gemini(PaLM) Api account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Step 1 — Browse this URL now: {{ $('Edit Fields').item.json.URL }}\nFetch the full page. Read every visible title, section heading, banner title, and product name.\n\nStep 2 — Identify the business sector of this site (ex: electronics, furniture, fashion, tools, cosmetics...).\n\nStep 3 — Mentally benchmark against 3 to 5 leading e-commerce competitors in the same sector (ex: if furniture → IKEA, Maisons du Monde, Wayfair). Use their naming standards as your reference.\n\nStep 4 — Return ONLY --titles_audit-- and --product_names_audit--:\n\nFor --titles_audit--:\n- Are page titles, section titles, and banner titles aligned with how top competitors in this sector label the same content?\n- Are there vague, missing, truncated, duplicated, or non-standard titles?\n- Do titles match the actual content below them compared to industry norms?\n\nFor --product_names_audit--:\n- Are product names structured the way competitors name similar products (Brand + Type + Key Attribute)?\n- Are names incomplete, misspelled, inconsistent, or too generic compared to market standards?\n- Do product names match their photos and descriptions as expected in this sector?\n\nFor every issue found, suggest a concrete fix using competitor naming as reference.\n\nNo tables. No extra text. Only the 2 sections in this exact format:\n\n--titles_audit--\ncontent\n--product_names_audit--\ncontent",
+        "options": {
+          "systemMessage": "You are a senior e-commerce content strategist and competitive analyst. Before any analysis, you MUST fetch and fully browse the URL provided by the user.\n\nYour job is to:\n1. Extract all page titles, section titles, banner titles, and product names from the page.\n2. Identify the site's business sector and activity (ex: electronics, fashion, furniture, cosmetics...).\n3. Benchmark every title and product name against industry-standard naming conventions used by leading e-commerce competitors in the same sector.\n4. Flag anything that deviates from what a well-performing competitor site in the same niche would use.\n5. Suggest a concrete fix for every flagged item based on what similar sites actually use.\n\nSTRICT OUTPUT RULES — NO EXCEPTIONS:\n- NEVER generate tables.\n- NEVER add intro, commentary, preamble, or closing text.\n- NEVER number sections or add extra separators.\n- Output ONLY these 2 sections, in this exact order, using these exact labels.\n- Each finding must follow this pattern:\n  **[Item name or location]**: Issue found | What competitors use instead | Suggested fix\n- If no issues found in a section: \"No issues detected in this pass.\"\n\n--titles_audit--\n--product_names_audit--"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        320,
+        240
+      ],
+      "id": "d31aa3cb-09dc-49ab-b621-b416c29ac04a",
+      "name": "Titles & Product Names Verifier"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Step 1 — Browse this URL now: {{ $('Edit Fields').item.json.URL }}\nFetch the full page. Inspect every image, photo, banner, and visual element.\n\nStep 2 — Return ONLY --photos_audit--. Verify:\n- Are photos present and loading correctly (no broken images)?\n- Does each photo match the title and product it is associated with?\n- Are there generic, placeholder, or irrelevant images used?\n- Are product photos consistent in quality and framing across the catalog?\n- Do banner visuals match the promotional content they accompany?\n- Are any photos missing where content clearly requires one?\n\nNo tables. No extra text. Only the 1 section.",
+        "options": {
+          "systemMessage": "You are a senior visual content auditor. Before any analysis, you MUST fetch and fully browse the URL provided by the user.\n\nYour job is to verify that all photos and visual elements on the page are present, correctly labeled, relevant, and coherent with their context.\n\nSTRICT OUTPUT RULES — NO EXCEPTIONS:\n- NEVER generate tables.\n- NEVER add intro, commentary, preamble, or closing text.\n- Output ONLY this 1 section.\n- Each finding: **Item name or location**: what is wrong or confirmed.\n- If no issues: \"No issues detected in this pass.\"\n\n--photos_audit--"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        352,
+        576
+      ],
+      "id": "97553875-e9a1-4b91-9513-806ce49196c3",
+      "name": "Photos & Visuals Verifier"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Step 1 — Browse this URL now: {{ $('Edit Fields').item.json.URL }}\nFetch the full page. Read every product description, body text, label, and tooltip.\n\nStep 2 — Return ONLY --descriptions_audit--. Verify:\n- Are product descriptions present and complete, or missing/truncated?\n- Do descriptions accurately match their product name and photo?\n- Are there placeholder texts (\"Lorem ipsum\", \"Description here\", etc.)?\n- Is the language consistent, professional, and free of spelling errors?\n- Are key product details (specs, materials, dimensions) present where expected?\n- Are any descriptions duplicated across different products?\n\nNo tables. No extra text. Only the 1 section.",
+        "options": {
+          "systemMessage": "You are a senior copywriting and content quality auditor. Before any analysis, you MUST fetch and fully browse the URL provided by the user.\n\nYour job is to verify that all product descriptions and text content on the page are complete, accurate, coherent, and professional.\n\nSTRICT OUTPUT RULES — NO EXCEPTIONS:\n- NEVER generate tables.\n- NEVER add intro, commentary, preamble, or closing text.\n- Output ONLY this 1 section.\n- Each finding: **Item name or location**: what is wrong or confirmed.\n- If no issues: \"No issues detected in this pass.\"\n\n--descriptions_audit--"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        704,
+        576
+      ],
+      "id": "6512c8b2-f667-4637-99ff-b319458f077c",
+      "name": "Descriptions & Text Content Verifier"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Step 1 — Browse this URL now: {{ $('Edit Fields').item.json.URL }}\nFetch the full page. Inspect the full category tree, subcategories, and catalog structure.\n\nStep 2 — Return ONLY --categories_audit--. Verify:\n- Are all categories named clearly and correctly?\n- Are there empty, broken, or misrouted category pages?\n- Do products appear in the correct and relevant categories?\n- Are subcategory hierarchies logical and consistent?\n- Are category thumbnails or visuals present and matching?\n- Are there categories with no products or products with no category?\n\nNo tables. No extra text. Only the 1 section.",
+        "options": {
+          "systemMessage": "You are a senior catalog and information architecture auditor. Before any analysis, you MUST fetch and fully browse the URL provided by the user.\n\nYour job is to verify that all categories, subcategories, and catalog structure are coherent, complete, and correctly populated.\n\nSTRICT OUTPUT RULES — NO EXCEPTIONS:\n- NEVER generate tables.\n- NEVER add intro, commentary, preamble, or closing text.\n- Output ONLY this 1 section.\n- Each finding: **Category or location**: what is wrong or confirmed.\n- If no issues: \"No issues detected in this pass.\"\n\n--categories_audit--"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1056,
+        576
+      ],
+      "id": "62ebadd1-c186-42d0-beed-acfe5fa5c5ab",
+      "name": "Categories & Structure Verifier",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "audit_g_p",
+          "mode": "list",
+          "cachedResultName": "audit_g_p"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_a": 0,
+            "year_a": 0,
+            "content": "=overview\n{{ $('Code in JavaScript').item.json.parsed.overview }}\nux_issues\n{{ $('Code in JavaScript').item.json.parsed.ux_issues }}\nui_issues \n{{ $('Code in JavaScript').item.json.parsed.ui_issues }}\ntitel \n{{ $('Code in JavaScript').item.json.parsed.titles_audit }}\nphotos \n{{ $('Code in JavaScript').item.json.parsed.photos_audit }}\ndescription \n{{ $('Code in JavaScript').item.json.parsed.descriptions_audit }}\ncategory \n{{ $('Code in JavaScript').item.json.parsed.categories_audit }}\nfixes : \n{{ $('Code in JavaScript').item.json.parsed.recommanded_fixes.critical }}\n{{ $('Code in JavaScript').item.json.parsed.recommanded_fixes.high }}\n{{ $('Code in JavaScript').item.json.parsed.recommanded_fixes.medium }}\n{{ $('Code in JavaScript').item.json.parsed.recommanded_fixes.low }}\nfinal assessment \n{{ $('Code in JavaScript').item.json.parsed.final_assessment }}",
+            "url_audit": "={{ $('Code in JavaScript1').item.json.doc_title }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_a",
+              "displayName": "id_a",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_a",
+              "displayName": "year_a",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url_audit",
+              "displayName": "url_audit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2832,
+        400
+      ],
+      "id": "0d2e9209-48dc-4a08-9f29-197eddcb59f4",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "912b39ef-64ab-44fa-8f09-0b5358e512f1",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1968,
+        576
+      ],
+      "id": "937285f0-dca9-44da-a053-5cc65432b087",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here is the ORIGINAL OUTPUT:\n{{ $('AI Agent').item.json.output }}\n\nHere are the DETECTED ISSUES:\n{{ $json.issues }}\n\nTASK:\nFix the original output so that ALL issues are resolved.\n\nIMPORTANT:\n- Keep original meaning where possible.\n- Strictly respect ALL formatting rules.\n- Ensure ALL 9 sections exist and are correctly ordered.\n- Ensure ZERO extra text outside required sections.\n- Ensure issue formatting is correct everywhere.\n\nReturn ONLY the corrected output.",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a strict formatting correction engine.  Your role is to FIX an existing output so that it FULLY complies with strict structural and formatting rules.  You MUST: - Fix ALL reported issues. - NOT remove valid content unless required for compliance. - NOT add commentary, explanation, or meta text. - ONLY return the corrected final output.  STRICT RULES: - NEVER generate tables. - NEVER add intro, commentary, or closing text. - Output ONLY the 9 required sections in exact order. - Each issue must follow: **Bold title**: description - recommended_fixes must contain CRITICAL / HIGH / MEDIUM / LOW groups with numbered items. - Overview and final_assessment must be concise analytical paragraphs. - Empty sections MUST contain: \"No issues detected in this pass.\"  If any issue is provided, you MUST correct it. No partial fixes allowed."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        2176,
+        672
+      ],
+      "id": "eab3e30b-1745-471a-b452-74ecad1d0cd6",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2176,
+        560
+      ],
+      "id": "292c6e86-a8af-4b11-b290-3b10766f2ccc",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "oPngAOzJAvxLEJ1Y",
+          "name": "OpenRouter account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $input.first().json.output || \"\";\n\n// Normalize text\nconst text = output.trim();\n\n// Required sections in strict order\nconst sections = [\n  \"--Overview--\",\n  \"--ux_issues--\",\n  \"--ui_issues--\",\n  \"--titles_audit--\",\n  \"--photos_audit--\",\n  \"--descriptions_audit--\",\n  \"--categories_audit--\",\n  \"--recommanded_fixes--\",\n  \"--final_assessment--\"\n];\n\n// Initialize\nlet isValid = true;\nlet issues = [];\n\n\n\n// Rule 2: No intro or extra text before first section\nif (!text.startsWith(\"--Overview--\")) {\n  isValid = false;\n  issues.push(\"CRITICAL: Output does not start with --Overview--.\");\n}\n\n// Rule 3: Check all sections exist and in order\nlet lastIndex = -1;\nsections.forEach((section) => {\n  const index = text.indexOf(section);\n  if (index === -1) {\n    isValid = false;\n    issues.push(`CRITICAL: Missing section ${section}.`);\n  } else if (index < lastIndex) {\n    isValid = false;\n    issues.push(`CRITICAL: Section ${section} is out of order.`);\n  }\n  lastIndex = index;\n});\n\n// Rule 4: Ensure ONLY these sections exist\nconst extraSectionPattern = /--[a-zA-Z_]+--/g;\nconst foundSections = text.match(extraSectionPattern) || [];\n\nfoundSections.forEach(sec => {\n  if (!sections.includes(sec)) {\n    isValid = false;\n    issues.push(`HIGH: Unexpected section detected ${sec}.`);\n  }\n});\n\n\n// Rule 6: Validate recommended_fixes structure\nconst recSectionMatch = text.match(/--recommanded_fixes--([\\s\\S]*?)--final_assessment--/);\nif (recSectionMatch) {\n  const recText = recSectionMatch[1];\n\n  const requiredGroups = [\"CRITICAL\", \"HIGH\", \"MEDIUM\", \"LOW\"];\n  requiredGroups.forEach(group => {\n    if (!recText.includes(group)) {\n      isValid = false;\n      issues.push(`CRITICAL: Missing ${group} group in recommended_fixes.`);\n    }\n  });\n\n  if (!/\\d+\\./.test(recText)) {\n    isValid = false;\n    issues.push(\"HIGH: recommended_fixes must contain numbered items.\");\n  }\n} else {\n  isValid = false;\n  issues.push(\"CRITICAL: recommended_fixes section structure invalid.\");\n}\n\n// Rule 7: Empty sections must contain fallback sentence\nsections.forEach(section => {\n  const regex = new RegExp(`${section}([\\\\s\\\\S]*?)(?=--|$)`);\n  const match = text.match(regex);\n\n  if (match) {\n    const content = match[1].trim();\n    if (content === \"\") {\n      isValid = false;\n      issues.push(`MEDIUM: ${section} is empty without fallback sentence.`);\n    }\n  }\n});\n\n// Final result\nreturn [{\n  json: {\n    valid: isValid,\n    result: isValid ? \"true\" : \"false\",\n    issues: isValid ? [] : issues\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        576
+      ],
+      "id": "4de8576f-be95-455e-a4b5-bc4af22ae807",
+      "name": "verify"
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $input.first().json.output || \"\";\n\n// Normalize text\nconst text = output.trim();\n\n// Required sections in strict order\nconst sections = [\n  \"--Overview--\",\n  \"--ux_issues--\",\n  \"--ui_issues--\",\n  \"--titles_audit--\",\n  \"--photos_audit--\",\n  \"--descriptions_audit--\",\n  \"--categories_audit--\",\n  \"--recommanded_fixes--\",\n  \"--final_assessment--\"\n];\n\n// Initialize\nlet isValid = true;\nlet issues = [];\n\n\n\n// Rule 2: No intro or extra text before first section\nif (!text.startsWith(\"--Overview--\")) {\n  isValid = false;\n  issues.push(\"CRITICAL: Output does not start with --Overview--.\");\n}\n\n// Rule 3: Check all sections exist and in order\nlet lastIndex = -1;\nsections.forEach((section) => {\n  const index = text.indexOf(section);\n  if (index === -1) {\n    isValid = false;\n    issues.push(`CRITICAL: Missing section ${section}.`);\n  } else if (index < lastIndex) {\n    isValid = false;\n    issues.push(`CRITICAL: Section ${section} is out of order.`);\n  }\n  lastIndex = index;\n});\n\n// Rule 4: Ensure ONLY these sections exist\nconst extraSectionPattern = /--[a-zA-Z_]+--/g;\nconst foundSections = text.match(extraSectionPattern) || [];\n\nfoundSections.forEach(sec => {\n  if (!sections.includes(sec)) {\n    isValid = false;\n    issues.push(`HIGH: Unexpected section detected ${sec}.`);\n  }\n});\n\n// Rule 6: Validate recommended_fixes structure\nconst recSectionMatch = text.match(/--recommanded_fixes--([\\s\\S]*?)--final_assessment--/);\nif (recSectionMatch) {\n  const recText = recSectionMatch[1];\n\n  const requiredGroups = [\"CRITICAL\", \"HIGH\", \"MEDIUM\", \"LOW\"];\n  requiredGroups.forEach(group => {\n    if (!recText.includes(group)) {\n      isValid = false;\n      issues.push(`CRITICAL: Missing ${group} group in recommended_fixes.`);\n    }\n  });\n\n  if (!/\\d+\\./.test(recText)) {\n    isValid = false;\n    issues.push(\"HIGH: recommended_fixes must contain numbered items.\");\n  }\n} else {\n  isValid = false;\n  issues.push(\"CRITICAL: recommended_fixes section structure invalid.\");\n}\n\n// Rule 7: Empty sections must contain fallback sentence\nsections.forEach(section => {\n  const regex = new RegExp(`${section}([\\\\s\\\\S]*?)(?=--|$)`);\n  const match = text.match(regex);\n\n  if (match) {\n    const content = match[1].trim();\n    if (content === \"\") {\n      isValid = false;\n      issues.push(`MEDIUM: ${section} is empty without fallback sentence.`);\n    }\n  }\n});\n\n// Final result\nreturn [{\n  json: {\n    valid: isValid,\n    result: isValid ? \"true\" : \"false\",\n    issues: isValid ? [] : issues\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2528,
+        672
+      ],
+      "id": "52712553-0f10-4a01-8ef3-4015a0aaf015",
+      "name": "verify1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $('AI Agent').first().json.output;\n\n// ─── Sub-section parser (e.g. CRITICAL / HIGH / MEDIUM / LOW blocks) ───────\nfunction parseSubSections(content) {\n  const result = {};\n  let currentKey = null;\n  let currentItems = [];\n\n  for (const line of content.split('\\n')) {\n    const trimmed = line.trim();\n    if (!trimmed) continue;\n\n    // Header = ALL-CAPS word(s) followed by a colon, nothing else on the line\n    const headerMatch = trimmed.match(/^([A-Z][A-Z\\s]{1,30}):\\s*$/);\n    if (headerMatch) {\n      if (currentKey !== null) result[currentKey.toLowerCase()] = currentItems;\n      currentKey = headerMatch[1].trim();\n      currentItems = [];\n    } else if (currentKey !== null) {\n      // Numbered item  →  \"1. Some text\"\n      const numberedMatch = trimmed.match(/^\\d+\\.\\s+(.+)/);\n      if (numberedMatch) currentItems.push(numberedMatch[1]);\n    }\n  }\n\n  if (currentKey !== null) result[currentKey.toLowerCase()] = currentItems;\n  return Object.keys(result).length > 0 ? result : null;\n}\n\n// ─── Generic content parser ──────────────────────────────────────────────────\nfunction parseContent(content) {\n  if (!content) return '';\n\n  // 1. Try sub-section blocks first (ALL-CAPS headings)\n  const subSections = parseSubSections(content);\n  if (subSections) return subSections;\n\n  // 2. Numbered list  →  array\n  const numbered = content\n    .split('\\n')\n    .map(l => l.trim())\n    .filter(l => /^\\d+\\.\\s+/.test(l))\n    .map(l => l.replace(/^\\d+\\.\\s+/, ''));\n  if (numbered.length > 0) return numbered;\n\n  // 3. Bullet list  →  array\n  const bullets = content\n    .split('\\n')\n    .map(l => l.trim())\n    .filter(l => /^[•\\-\\*]\\s/.test(l))\n    .map(l => l.replace(/^[•\\-\\*]\\s*/, ''));\n  if (bullets.length > 0) return bullets;\n\n  // 4. Plain text — collapse extra whitespace\n  return content.replace(/[ \\t]+/g, ' ').replace(/\\n{2,}/g, '\\n').trim();\n}\n\n// ─── Master parser ───────────────────────────────────────────────────────────\nfunction parseAIOutput(rawText) {\n  const result = {};\n\n  // Normalize literal \"\\n\" strings AND strip trailing whitespace per line\n  const text = rawText\n    .replace(/\\\\n/g, '\\n')          // literal \\n → real newline\n    .replace(/[ \\t]+$/gm, '');      // trailing spaces per line\n\n  /*\n    Matches section markers in these formats:\n      **--Title--**\n      **--Bold title: Title--**\n      **--Title--**   (no ** wrappers, fallback)\n  */\n  const sectionRegex = /(?:\\*\\*)?--([\\s\\S]*?)--(?:\\*\\*)?/g;\n\n  const sections = [];\n  let m;\n  while ((m = sectionRegex.exec(text)) !== null) {\n    sections.push({\n      title: m[1].trim(),\n      index: m.index,\n      endIndex: m.index + m[0].length\n    });\n  }\n\n  sections.forEach((section, i) => {\n    const nextIndex = sections[i + 1]?.index ?? text.length;\n    const content = text.slice(section.endIndex, nextIndex).trim();\n\n    // ── Derive clean title ─────────────────────────────────────────────────\n    let rawTitle = section.title;\n\n    // Strip \"Bold title: \" prefix  →  \"Bold title: UX Issues\"  →  \"UX Issues\"\n    rawTitle = rawTitle.replace(/^Bold\\s+title:\\s*/i, '').trim();\n\n    // Build snake_case key\n    const key = rawTitle\n      .toLowerCase()\n      .replace(/[^\\w\\s]/g, '')      // remove punctuation\n      .replace(/\\s+/g, '_')         // spaces → underscore\n      .replace(/_{2,}/g, '_')       // collapse double underscores\n      .replace(/^_|_$/g, '');       // trim leading/trailing underscores\n\n    if (!key) return;               // skip empty/malformed markers\n\n    result[key] = parseContent(content);\n  });\n\n  return result;\n}\n\n// ─── n8n entry point ─────────────────────────────────────────────────────────\nreturn items.map(item => {\n  const text = item.json.output || item.json.text || '';\n  return {\n    json: {\n      parsed: parseAIOutput(text)\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2736,
+        672
+      ],
+      "id": "bc06d837-6e51-4174-981c-beacbb3c9edd",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const DOC_COntent = \"audit  générale de : \";\nconst URL =$('On form submission').first().json['Web site URL'] ;\n\n\nreturn [\n  {\n    json: {\n      doc_title: `${URL}${DOC_COntent}_${next}`\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2944,
+        688
+      ],
+      "id": "dde682d3-8c59-4d39-8c3e-b7c66aeaf1ef",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "audit_g_p",
+          "mode": "list",
+          "cachedResultName": "audit_g_p"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_a": 0,
+            "year_a": 0,
+            "content": "=overview {{ $('Code in JavaScript2').item.json.parsed.overview }} ux_issues {{ $('Code in JavaScript2').item.json.parsed.ux_issues }} ui_issues  {{ $('Code in JavaScript2').item.json.parsed.ui_issues }} titel  {{ $('Code in JavaScript2').item.json.parsed.titles_audit }} photos  {{ $('Code in JavaScript2').item.json.parsed.photos_audit }} description  {{ $('Code in JavaScript2').item.json.parsed.descriptions_audit }} category  {{ $('Code in JavaScript2').item.json.parsed.categories_audit }} fixes :  {{ $('Code in JavaScript2').item.json.parsed.recommanded_fixes.critical }} {{ $('Code in JavaScript2').item.json.parsed.recommanded_fixes.high }} {{ $('Code in JavaScript2').item.json.parsed.recommanded_fixes.medium }} {{ $('Code in JavaScript2').item.json.parsed.recommanded_fixes.low }} final assessment  {{ $('Code in JavaScript2').item.json.parsed.final_assessment }}",
+            "url_audit": "={{ $('Code in JavaScript3').item.json.doc_title }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_a",
+              "displayName": "id_a",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_a",
+              "displayName": "year_a",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url_audit",
+              "displayName": "url_audit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3216,
+        704
+      ],
+      "id": "aafcee31-fbab-490d-9074-924e422a3602",
+      "name": "Insert rows in a table1",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "UX & User Flow Auditor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UX & User Flow Auditor": {
+      "main": [
+        [
+          {
+            "node": "Titles & Product Names Verifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "verify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "UX & User Flow Auditor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Titles & Product Names Verifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Photos & Visuals Verifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Descriptions & Text Content Verifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Categories & Structure Verifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Titles & Product Names Verifier": {
+      "main": [
+        [
+          {
+            "node": "Photos & Visuals Verifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Photos & Visuals Verifier": {
+      "main": [
+        [
+          {
+            "node": "Descriptions & Text Content Verifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descriptions & Text Content Verifier": {
+      "main": [
+        [
+          {
+            "node": "Categories & Structure Verifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Categories & Structure Verifier": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "verify1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "verify": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "verify1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "158fe418-1859-465b-aeff-df3f3598768d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cb419ad69e8aba8cf2108913785cdc48603a429b7ff4ca05f8b5d325e127e837"
+  },
+  "id": "DQ7E7G4PQnPnAd3x",
+  "tags": []
+}

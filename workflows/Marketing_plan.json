@@ -1,0 +1,447 @@
+{
+  "name": "Marketing_plan",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "test",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "busness name"
+            },
+            {
+              "fieldLabel": "market type"
+            },
+            {
+              "fieldLabel": "country"
+            },
+            {
+              "fieldLabel": "budget"
+            },
+            {
+              "fieldLabel": "goal"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        -1088,
+        0
+      ],
+      "id": "47d0b0c4-be1e-4bb5-9104-3509ae7ac6aa",
+      "name": "On form submission",
+      "webhookId": "88b3cbad-b691-4712-909e-1cf72fb40210"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Generate a full marketing plan for my business using the details below.\n- Business Name: {{ $json['busness name'] }}\n- Market Type: {{ $json['market type'] }}\n- Country: {{ $json.country }}\n- Budget: {{ $json.budget }}\n- Goal: {{ $json.goal }}\nUse the exact output format defined in your instructions. Tailor every section — channels, content, budget split, and weekly plan — specifically to the country and market type I provided. Express all monetary values in the correct local currency for that country.",
+        "options": {
+          "systemMessage": "You are an expert marketing strategist with deep knowledge of digital marketing, paid advertising, local SEO, content strategy, and market analysis across global markets.\nYour task is to generate a complete, actionable, and highly localized marketing plan based on the user's inputs.\nFollow these strict rules:\n1. Always tailor channel recommendations to the specified country (platform availability, user behavior, cultural fit).\n2. Always express budget figures in the correct local currency of the specified country.\n3. Always adapt ad platform splits and content tone to local market norms.\n4. Structure your output exactly as shown in the required format — no deviations.\n5. Be specific, professional, and data-informed. Avoid vague or generic advice.\n6. The 30-Day Plan must be actionable with clear weekly milestones.\n7. Never add sections not defined in the output format.\nRequired output format:\n# Marketing Plan – {business_name}\n## Market Analysis\n[2–3 sentences covering market landscape, competition level, and key opportunity in {country} for {market_type}.]\n## Marketing Strategy\n[2–3 sentences summarizing the core strategic approach, positioning, and primary objective aligned with {goal}.]\n## Channels (tailored to {country})\n[List only relevant and available platforms in {country}. Include 3–5 channels. For each channel, add one line explaining why it fits this market.]\n## Content Strategy\n[Describe content pillars, tone, formats (video/image/text), posting frequency, and key messaging hooks — all adapted to {market_type} and {country} audience.]\n## Paid Ads\nBudget: {local_currency} {budget}\nSplit:\n- [Channel 1] [%] — [brief rationale]\n- [Channel 2] [%] — [brief rationale]\n(Adjust split percentages based on {country} platform dominance and {goal}.)\n## 30-Day Plan\nWeek 1: [Action]\nWeek 2: [Action]\nWeek 3: [Action]\nWeek 4: [Action]"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -880,
+        0
+      ],
+      "id": "a46bedb3-1a6a-482b-98b2-2f39a97980f7",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -880,
+        -112
+      ],
+      "id": "022a6c0a-1db1-4074-ba6a-c71a57353013",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "MwfjNq7ruLpbyk1N",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input =$('AI Agent').first().json.output ;\n\n// ─── Cleanup: strip markdown noise from content ───────────────────────────────\nfunction cleanContent(text) {\n  return text\n    .replace(/^#{1,6}\\s*/gm, \"\")          // ## headings\n    .replace(/^[-]{3,}\\s*$/gm, \"\")        // --- dividers\n    .replace(/^[=]{3,}\\s*$/gm, \"\")        // === dividers\n    .replace(/^[_]{3,}\\s*$/gm, \"\")        // ___ dividers\n    .replace(/^[*]{3,}\\s*$/gm, \"\")        // *** dividers\n    .replace(/\\*\\*(.*?)\\*\\*/g, \"$1\")      // **bold**\n    .replace(/__(.*?)__/g, \"$1\")          // __bold__\n    .replace(/\\*(.*?)\\*/g, \"$1\")          // *italic*\n    .replace(/`{1,3}[^`]*`{1,3}/g, \"\")   // `code` or ```blocks```\n    .replace(/\\n{3,}/g, \"\\n\\n\")           // collapse excess blank lines\n    .trim();\n}\n\n// ─── Section header patterns ──────────────────────────────────────────────────\nconst headerRegex = new RegExp(\n  [\n    /Marketing Plan\\s*[–\\-—][^\\n]*/,\n    /Marketing Strategy/,\n    /Channels(?:\\s*\\(tailored to[^)]*\\))?/,\n    /Content Strategy/,\n    /Paid Ads/,\n    /30-Day Plan/,\n  ]\n    .map((r) => r.source)\n    .join(\"|\"),\n  \"gi\"\n);\n\n// ─── Find all headers with their positions ────────────────────────────────────\nconst matches = [];\nlet match;\nwhile ((match = headerRegex.exec(input)) !== null) {\n  matches.push({ index: match.index, raw: match[0] });\n}\n\n// ─── Slice content between headers ───────────────────────────────────────────\nconst extracted = {};\nfor (let i = 0; i < matches.length; i++) {\n  const { index, raw } = matches[i];\n  const start = index + raw.length;\n  const end = i + 1 < matches.length ? matches[i + 1].index : input.length;\n  const content = cleanContent(input.slice(start, end)); // ← cleaned here\n\n  const lowerRaw = raw.toLowerCase();\n  if (/marketing plan/i.test(lowerRaw)) {\n    const nameMatch = raw.match(/Marketing Plan\\s*[–\\-—]\\s*(.+)/i);\n    extracted.marketingPlanTitle = nameMatch ? nameMatch[1].trim() : \"\";\n    extracted.marketingPlan = content;\n  } else if (/marketing strategy/i.test(lowerRaw)) {\n    extracted.marketingStrategy = content;\n  } else if (/channels/i.test(lowerRaw)) {\n    extracted.channels = content;\n  } else if (/content strategy/i.test(lowerRaw)) {\n    extracted.contentStrategy = content;\n  } else if (/paid ads/i.test(lowerRaw)) {\n    extracted.paidAds = content;\n  } else if (/30-day plan/i.test(lowerRaw)) {\n    extracted.thirtyDayPlan = content;\n  }\n}\n\n// ─── n8n output ───────────────────────────────────────────────────────────────\nreturn [\n  {\n    json: {\n      marketingPlanTitle: extracted.marketingPlanTitle || \"\",\n      marketingPlan:      extracted.marketingPlan      || \"\",\n      marketingStrategy:  extracted.marketingStrategy  || \"\",\n      channels:           extracted.channels           || \"\",\n      contentStrategy:    extracted.contentStrategy    || \"\",\n      paidAds:            extracted.paidAds            || \"\",\n      thirtyDayPlan:      extracted.thirtyDayPlan      || \"\",\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -16,
+        -16
+      ],
+      "id": "f2fb22d8-def6-4e81-a773-3650b31327e7",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get inputs\nconst aiOutput = $input.first().json.output || \"\";\nconst inputCountry = $('On form submission').first().json.country || \"\";\n\n// Prepare validation\nlet isValid = true;\nlet issues = [];\n\n// 1. Check required sections in AI output\nconst requiredSections = [\n  \"Marketing Plan\",\n  \"Market Analysis\",\n  \"Marketing Strategy\",\n  \"Channels\",\n  \"Content Strategy\",\n  \"Paid Ads\",\n  \"30-Day Plan\"\n];\n\nrequiredSections.forEach(section => {\n  if (!aiOutput.includes(section)) {\n    isValid = false;\n    issues.push(`Missing section: ${section}`);\n  }\n});\n\n// 2. Check country consistency\n// (basic check: country name must appear in output)\nif (inputCountry) {\n  if (!aiOutput.toLowerCase().includes(inputCountry.toLowerCase())) {\n    isValid = false;\n    issues.push(`Country mismatch: \"${inputCountry}\" not found in AI output`);\n  }\n} else {\n  isValid = false;\n  issues.push(\"Input country is missing\");\n}\n\n// 3. Check basic formatting (Markdown style headings)\nif (!aiOutput.includes(\"##\")) {\n  isValid = false;\n  issues.push(\"Output is not properly formatted in Markdown (missing headings)\");\n}\n\n// 4. Final result (n8n format)\nif (isValid) {\n  return [\n    {\n      json: {\n        valid: true,\n        message: \"Output is valid\"\n      }\n    }\n  ];\n} else {\n  return [\n    {\n      json: {\n        valid: false,\n        issues: issues\n      }\n    }\n  ];\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -528,
+        0
+      ],
+      "id": "6d2c6408-08df-4c9c-a581-c819baa1d36e",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "9a22275f-b501-4191-ae5a-48b4dea29ca8",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -320,
+        0
+      ],
+      "id": "20e86354-649b-4676-b8cb-1eb66bad71fa",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Please regenerate the marketing plan below by fixing all of the listed issues. Return only the corrected plan in the exact required format — no commentary, no explanations, no preamble.\n\n---\n\n## Business Details (must be respected in every section of the output):\n- Business Name: {{ $('On form submission').item.json['busness name'] }}\n- Market Type: {{ $('On form submission').item.json['market type'] }}\n- Country: {{ $('On form submission').item.json.country }}\n- Budget: {{ $('On form submission').item.json.budget }}\n- Goal: {{ $('On form submission').item.json.goal }}\n\n---\n\n## Original Marketing Plan (to be corrected):\n{{ $('AI Agent').item.json.output }}\n\n---\n\n## Issues to Fix:\n{{ $('Code in JavaScript1').item.json.issues }}\n\n---\n\n## Instructions:\n- Address every single issue listed above — none should be left unresolved.\n- Every section must remain fully aligned with the business details above.\n- Use the correct local currency for {{ $('On form submission').item.json.country }}  for all monetary values.\n- Tailor all channels, content tone, and ad splits specifically to {{ $('On form submission').item.json.country }}  and {{ $('On form submission').item.json['market type'] }}.\n- Preserve all parts of the original plan that are correct and do not relate to any listed issue.\n- Do not mention the issues or the original version anywhere in your output.\n- Output only the final, polished marketing plan using the exact format defined in your system instructions.",
+        "options": {
+          "systemMessage": "You are an expert marketing strategist with deep knowledge of digital marketing, paid advertising, local SEO, content strategy, and market analysis across global markets.\n\nYou are operating as a REGENERATION agent. You will receive:\n1. A previously generated marketing plan (the original AI output)\n2. A list of specific issues or improvement points that were identified in that plan\n\nYour task is to produce a corrected, improved, and fully complete marketing plan that fixes every issue listed — while preserving everything that was already correct in the original output.\n\nFollow these strict rules:\n1. Fix ALL issues listed — do not skip or partially address any of them.\n2. Always tailor channel recommendations to the specified country (platform availability, user behavior, cultural fit).\n3. Always express budget figures in the correct local currency of the specified country.\n4. Always adapt ad platform splits and content tone to local market norms.\n5. Structure your output exactly as shown in the required format — no deviations, no added sections.\n6. Be specific, professional, and data-informed. Avoid vague or generic advice.\n7. The 30-Day Plan must be actionable with clear weekly milestones.\n8. Never add sections not defined in the output format.\n9. Never reference the issues list or the original plan in your output — just deliver the final, clean result.\n\nRequired output format:\n\n# Marketing Plan – {business_name}\n\n## Market Analysis\n[2–3 sentences covering market landscape, competition level, and key opportunity in {country} for {market_type}.]\n\n## Marketing Strategy\n[2–3 sentences summarizing the core strategic approach, positioning, and primary objective aligned with {goal}.]\n\n## Channels (tailored to {country})\n[List only relevant and available platforms in {country}. Include 3–5 channels. For each channel, add one line explaining why it fits this market.]\n\n## Content Strategy\n[Describe content pillars, tone, formats (video/image/text), posting frequency, and key messaging hooks — all adapted to {market_type} and {country} audience.]\n\n## Paid Ads\nBudget: {local_currency} {budget}\nSplit:\n- [Channel 1] [%] — [brief rationale]\n- [Channel 2] [%] — [brief rationale]\n(Adjust split percentages based on {country} platform dominance and {goal}.)\n\n## 30-Day Plan\nWeek 1: [Action]\nWeek 2: [Action]\nWeek 3: [Action]\nWeek 4: [Action]"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -256,
+        416
+      ],
+      "id": "0172c3e5-e821-4256-8148-94f57edb3750",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        304
+      ],
+      "id": "ac540f7c-06df-45f5-ae52-79587f3007b5",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "oPngAOzJAvxLEJ1Y",
+          "name": "OpenRouter account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input =$('AI Agent1').first().json.output ;\n\n// ─── Cleanup: strip markdown noise from content ───────────────────────────────\nfunction cleanContent(text) {\n  return text\n    .replace(/^#{1,6}\\s*/gm, \"\")          // ## headings\n    .replace(/^[-]{3,}\\s*$/gm, \"\")        // --- dividers\n    .replace(/^[=]{3,}\\s*$/gm, \"\")        // === dividers\n    .replace(/^[_]{3,}\\s*$/gm, \"\")        // ___ dividers\n    .replace(/^[*]{3,}\\s*$/gm, \"\")        // *** dividers\n    .replace(/\\*\\*(.*?)\\*\\*/g, \"$1\")      // **bold**\n    .replace(/__(.*?)__/g, \"$1\")          // __bold__\n    .replace(/\\*(.*?)\\*/g, \"$1\")          // *italic*\n    .replace(/`{1,3}[^`]*`{1,3}/g, \"\")   // `code` or ```blocks```\n    .replace(/\\n{3,}/g, \"\\n\\n\")           // collapse excess blank lines\n    .trim();\n}\n\n// ─── Section header patterns ──────────────────────────────────────────────────\nconst headerRegex = new RegExp(\n  [\n    /Marketing Plan\\s*[–\\-—][^\\n]*/,\n    /Marketing Strategy/,\n    /Channels(?:\\s*\\(tailored to[^)]*\\))?/,\n    /Content Strategy/,\n    /Paid Ads/,\n    /30-Day Plan/,\n  ]\n    .map((r) => r.source)\n    .join(\"|\"),\n  \"gi\"\n);\n\n// ─── Find all headers with their positions ────────────────────────────────────\nconst matches = [];\nlet match;\nwhile ((match = headerRegex.exec(input)) !== null) {\n  matches.push({ index: match.index, raw: match[0] });\n}\n\n// ─── Slice content between headers ───────────────────────────────────────────\nconst extracted = {};\nfor (let i = 0; i < matches.length; i++) {\n  const { index, raw } = matches[i];\n  const start = index + raw.length;\n  const end = i + 1 < matches.length ? matches[i + 1].index : input.length;\n  const content = cleanContent(input.slice(start, end)); // ← cleaned here\n\n  const lowerRaw = raw.toLowerCase();\n  if (/marketing plan/i.test(lowerRaw)) {\n    const nameMatch = raw.match(/Marketing Plan\\s*[–\\-—]\\s*(.+)/i);\n    extracted.marketingPlanTitle = nameMatch ? nameMatch[1].trim() : \"\";\n    extracted.marketingPlan = content;\n  } else if (/marketing strategy/i.test(lowerRaw)) {\n    extracted.marketingStrategy = content;\n  } else if (/channels/i.test(lowerRaw)) {\n    extracted.channels = content;\n  } else if (/content strategy/i.test(lowerRaw)) {\n    extracted.contentStrategy = content;\n  } else if (/paid ads/i.test(lowerRaw)) {\n    extracted.paidAds = content;\n  } else if (/30-day plan/i.test(lowerRaw)) {\n    extracted.thirtyDayPlan = content;\n  }\n}\n\n// ─── n8n output ───────────────────────────────────────────────────────────────\nreturn [\n  {\n    json: {\n      marketingPlanTitle: extracted.marketingPlanTitle || \"\",\n      marketingPlan:      extracted.marketingPlan      || \"\",\n      marketingStrategy:  extracted.marketingStrategy  || \"\",\n      channels:           extracted.channels           || \"\",\n      contentStrategy:    extracted.contentStrategy    || \"\",\n      paidAds:            extracted.paidAds            || \"\",\n      thirtyDayPlan:      extracted.thirtyDayPlan      || \"\",\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        416
+      ],
+      "id": "40cda01d-fa96-430e-ba65-fb9ff778ba59",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "marketing_paln",
+          "mode": "list",
+          "cachedResultName": "marketing_paln"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_m_p": 0,
+            "year_m_p": 0,
+            "content": "=Marketing Plan for   {{ $('Code in JavaScript2').item.json.marketingPlanTitle }}    \n{{ $('Code in JavaScript2').item.json.marketingPlan }}   \nMarketing Strategy :  \n{{ $('Code in JavaScript2').item.json.marketingStrategy }}   \nChannels :  \n{{ $('Code in JavaScript2').item.json.channels }}    \nContent Strategy :  \n{{ $('Code in JavaScript2').item.json.contentStrategy }}     Paid Ads :  \n{{ $('Code in JavaScript2').item.json.paidAds }}   \n30 Day Plan :   \n{{ $('Code in JavaScript2').item.json.thirtyDayPlan }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_m_p",
+              "displayName": "id_m_p",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_m_p",
+              "displayName": "year_m_p",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        192,
+        416
+      ],
+      "id": "8b7535a5-5364-47e9-b3fd-6ab481d8097d",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "marketing_paln",
+          "mode": "list",
+          "cachedResultName": "marketing_paln"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_m_p": 0,
+            "year_m_p": 0,
+            "content": "=Marketing Plan for   {{ $('Code in JavaScript').item.json.marketingPlanTitle }}   \n{{ $('Code in JavaScript').item.json.marketingPlan }}  \nMarketing Strategy : \n{{ $('Code in JavaScript').item.json.marketingStrategy }}  \nChannels : \n{{ $('Code in JavaScript').item.json.channels }}   \nContent Strategy : \n{{ $('Code in JavaScript').item.json.contentStrategy }}    \nPaid Ads : \n{{ $('Code in JavaScript').item.json.paidAds }}  \n30 Day Plan :  \n{{ $('Code in JavaScript').item.json.thirtyDayPlan }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_m_p",
+              "displayName": "id_m_p",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_m_p",
+              "displayName": "year_m_p",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        176,
+        -16
+      ],
+      "id": "9953c7df-16ee-47d3-a386-39efd653d76d",
+      "name": "Insert rows in a table1",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "1a213a56-6191-4a8b-bc4c-74433ffb75a1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cb419ad69e8aba8cf2108913785cdc48603a429b7ff4ca05f8b5d325e127e837"
+  },
+  "id": "nrLAEl69dYXqE6XZ",
+  "tags": []
+}

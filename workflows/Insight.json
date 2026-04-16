@@ -1,0 +1,518 @@
+{
+  "name": "Insight",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "test",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "user name"
+            },
+            {
+              "fieldLabel": "password"
+            },
+            {
+              "fieldLabel": "E-commerce Url"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        -736,
+        -272
+      ],
+      "id": "a508cd1e-150f-446f-898c-0ea338bb4048",
+      "name": "On form submission",
+      "webhookId": "eeca82a8-c4ed-4569-97b7-faf120d83ae0"
+    },
+    {
+      "parameters": {
+        "operation": "runCustomScript",
+        "scriptCode": "const page = await $page;\nconst sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));\n\nconst rawUrl = $json[\"E-commerce Url\"].trim().replace(/\\/$/, '');\nconst origin = rawUrl.match(/^(https?:\\/\\/[^\\/]+)/)[1];\nconst email = $json[\"user name\"];\nconst password = $json[\"password\"];\n\nconst loginUrl = `${origin}/login`;\n\nconst DASHBOARD_CANDIDATES = [\n  '/admin',\n  '/dashboard',\n  '/admin/dashboard',\n  '/panel',\n  '/control-panel',\n  '/manage',\n  '/management',\n  '/back-office',\n  '/backoffice',\n  '/portal',\n  '/home',\n  '/overview',\n];\n\nconsole.log('Login URL:', loginUrl);\n\n// Go to login page\nawait page.goto(loginUrl, { waitUntil: 'networkidle2' });\nawait sleep(1000);\n\n// Clear fields and fill credentials\nawait page.$eval('input[type=\"email\"]', el => el.value = '');\nawait page.type('input[type=\"email\"]', email);\nawait page.$eval('input[type=\"password\"]', el => el.value = '');\nawait page.type('input[type=\"password\"]', password);\nawait sleep(500);\n\n// Strategy 1: click submit button inside the form\nconst clicked = await page.evaluate(() => {\n  const form = document.querySelector('form');\n  if (!form) return false;\n  const btn = form.querySelector('button[type=\"submit\"], input[type=\"submit\"], button');\n  if (btn) { btn.click(); return true; }\n  return false;\n});\n\nconsole.log('Strategy 1 (form button) clicked:', clicked);\n\n// Strategy 2: press Enter as fallback\nif (!clicked) {\n  console.log('Falling back to Enter key...');\n  await page.focus('input[type=\"password\"]');\n  await page.keyboard.press('Enter');\n}\n\n// Wait for URL to leave /login\nawait page.waitForFunction(\n  () => !window.location.href.includes('/login'),\n  { timeout: 15000 }\n).catch(() => console.log('⚠️ Still on login page after 15s'));\n\nconst postLoginUrl = page.url();\nconsole.log('URL after login:', postLoginUrl);\n\nif (postLoginUrl.includes('/login')) {\n  const formHtml = await page.evaluate(() => {\n    const form = document.querySelector('form');\n    return form ? form.innerHTML : document.body.innerHTML.slice(0, 2000);\n  });\n  console.log('Form HTML:', formHtml);\n  throw new Error('Login failed — check console for form HTML.');\n}\n\n// Auto-detect the correct dashboard URL\nlet detectedDashboardUrl = null;\n\n// First check: did login already land us on a known dashboard endpoint?\nconst autoLandedPath = page.url().replace(origin, '');\nconst autoMatched = DASHBOARD_CANDIDATES.find(path => autoLandedPath.startsWith(path));\nif (autoMatched) {\n  detectedDashboardUrl = page.url();\n  console.log('✅ Auto-landed on dashboard:', detectedDashboardUrl);\n}\n\n// Second check: try each candidate until one works\nif (!detectedDashboardUrl) {\n  for (const candidate of DASHBOARD_CANDIDATES) {\n    const tryUrl = `${origin}${candidate}`;\n    console.log('Trying:', tryUrl);\n\n    await page.goto(tryUrl, { waitUntil: 'networkidle2' });\n    await sleep(1000);\n\n    const landed = page.url();\n    const isLoginPage = landed.includes('/login');\n    const isHomePage = landed === `${origin}/` || landed === origin;\n    const hasContent = await page.evaluate(() => document.body.innerText.trim().length > 100);\n\n    if (!isLoginPage && !isHomePage && hasContent) {\n      detectedDashboardUrl = landed;\n      console.log('✅ Dashboard found at:', detectedDashboardUrl);\n      break;\n    }\n\n    console.log(`✗ ${candidate} didn't work (landed: ${landed})`);\n  }\n}\n\nif (!detectedDashboardUrl) {\n  throw new Error('Could not detect dashboard URL — tried all common endpoints.');\n}\n\n// ✅ Wait for meaningful content to appear before extracting\nawait page.waitForFunction(\n  () => document.body.innerText.trim().length > 200,\n  { timeout: 10000 }\n).catch(() => console.log('⚠️ Page content slow to load'));\n\nawait sleep(1500);\n\nconsole.log('Final URL:', page.url());\n\n// Extract full page content\nconst data = await page.evaluate(() => {\n\n  const getLeafText = () =>\n    Array.from(document.querySelectorAll('body *'))\n      .filter(el => el.children.length === 0 && el.innerText?.trim().length > 0)\n      .map(el => el.innerText.trim())\n      .filter((v, i, arr) => arr.indexOf(v) === i);\n\n  const getFullHtml = () => document.body.innerHTML;\n\n  const getNativeTables = () =>\n    Array.from(document.querySelectorAll('table')).map(table => ({\n      type: 'native-table',\n      headers: Array.from(table.querySelectorAll('th')).map(th => th.innerText.trim()).filter(Boolean),\n      rows: Array.from(table.querySelectorAll('tr'))\n        .map(row => Array.from(row.querySelectorAll('td, th')).map(cell => cell.innerText.trim()))\n        .filter(row => row.some(cell => cell.length > 0))\n    }));\n\n  const getDivTables = () => {\n    const tableContainers = Array.from(document.querySelectorAll(\n      '[role=\"table\"], [role=\"grid\"], [role=\"treegrid\"]'\n    ));\n    return tableContainers.map(container => ({\n      type: 'div-table',\n      headers: Array.from(container.querySelectorAll('[role=\"columnheader\"]'))\n        .map(h => h.innerText.trim()).filter(Boolean),\n      rows: Array.from(container.querySelectorAll('[role=\"row\"]'))\n        .map(row =>\n          Array.from(row.querySelectorAll('[role=\"cell\"], [role=\"gridcell\"], [role=\"columnheader\"]'))\n            .map(cell => cell.innerText.trim())\n        ).filter(row => row.some(cell => cell.length > 0))\n    }));\n  };\n\n  const getListTables = () => {\n    const candidates = Array.from(document.querySelectorAll(\n      'ul, ol, [class*=\"list\"], [class*=\"grid\"], [class*=\"table\"], [class*=\"row\"]'\n    )).filter(el => {\n      const children = Array.from(el.children);\n      return children.length >= 3 &&\n        children.slice(0, 3).every(c => c.tagName === children[0].tagName);\n    });\n    return candidates.map(container => ({\n      type: 'list-table',\n      rows: Array.from(container.children)\n        .map(row => row.innerText.trim())\n        .filter(Boolean)\n    }));\n  };\n\n  const getTables = () => {\n    const native = getNativeTables();\n    const divs = getDivTables();\n    const lists = getListTables();\n    return [...native, ...divs, ...lists];\n  };\n\n  const getLinks = () =>\n    Array.from(document.querySelectorAll('a[href]')).map(a => ({\n      text: a.innerText.trim(),\n      href: a.href\n    })).filter(l => l.text.length > 0);\n\n  const getImages = () =>\n    Array.from(document.querySelectorAll('img')).map(img => ({\n      src: img.src,\n      alt: img.alt\n    }));\n\n  const getMeta = () => ({\n    title: document.title,\n    description: document.querySelector('meta[name=\"description\"]')?.content || '',\n    ogTitle: document.querySelector('meta[property=\"og:title\"]')?.content || '',\n    ogDescription: document.querySelector('meta[property=\"og:description\"]')?.content || '',\n  });\n\n  const getNumbers = () =>\n    Array.from(document.querySelectorAll('body *'))\n      .filter(el => el.children.length === 0)\n      .map(el => el.innerText?.trim())\n      .filter(text => text && /\\d/.test(text))\n      .filter((v, i, arr) => arr.indexOf(v) === i);\n\n  const getHeadings = () =>\n    Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6'))\n      .map(h => ({ tag: h.tagName, text: h.innerText.trim() }));\n\n  const getCharts = () =>\n    window.chartData || window.__data__ || window.__NEXT_DATA__ || null;\n\n  return {\n    meta: getMeta(),\n    headings: getHeadings(),\n    text: getLeafText(),\n    numbers: getNumbers(),\n    tables: getTables(),\n    links: getLinks(),\n    images: getImages(),\n    charts: getCharts(),\n    html: getFullHtml(),\n    url: window.location.href\n  };\n});\n\nreturn [{ json: data }];",
+        "options": {}
+      },
+      "type": "CUSTOM.puppeteer",
+      "typeVersion": 1,
+      "position": [
+        -528,
+        -272
+      ],
+      "id": "bce8109f-8741-42f8-97bf-6801baeab108",
+      "name": "Puppeteer"
+    },
+    {
+      "parameters": {
+        "jsCode": "const html = $input.first().json.html || '';\n\n/**\n * CLEAN HTML\n */\nlet cleaned = html\n  .replace(/<script[\\s\\S]*?<\\/script>/gi, '')\n  .replace(/<style[\\s\\S]*?<\\/style>/gi, '')\n  .replace(/<img[^>]*>/gi, '')\n  .replace(/<iframe[\\s\\S]*?<\\/iframe>/gi, '');\n\n/**\n * STRIP TAGS\n */\nfunction stripTags(str) {\n  return str.replace(/<[^>]*>/g, '').replace(/\\s+/g, ' ').trim();\n}\n\n/**\n * =========================\n * NEW: FULL TEXT EXTRACTION\n * =========================\n */\nfunction extractFullText(html) {\n  return html\n    .replace(/<br\\s*\\/?>/gi, '\\n')\n    .replace(/<\\/p>|<\\/div>|<\\/h[1-6]>/gi, '\\n')\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/\\n+/g, '\\n')\n    .replace(/\\s+/g, ' ')\n    .replace(/\\n\\s+/g, '\\n')\n    .trim();\n}\n\n/**\n * =========================\n * NEW: FIND TABLE TITLES\n * =========================\n */\nfunction extractTablesWithTitles(html) {\n  const tables = html.match(/<table[\\s\\S]*?<\\/table>/gi) || [];\n  const results = [];\n\n  for (const table of tables) {\n    const index = html.indexOf(table);\n    const before = html.substring(Math.max(0, index - 500), index);\n\n    // try caption first\n    let titleMatch = table.match(/<caption[^>]*>([\\s\\S]*?)<\\/caption>/i);\n\n    // fallback: last heading before table\n    if (!titleMatch) {\n      titleMatch = before.match(/<(h1|h2|h3|h4|h5|h6)[^>]*>([\\s\\S]*?)<\\/\\1>(?![\\s\\S]*<\\1)/i);\n    }\n\n    const title = titleMatch\n      ? stripTags(titleMatch[1] || titleMatch[2])\n      : '';\n\n    results.push({\n      title,\n      html: table\n    });\n  }\n\n  return results;\n}\n\n/**\n * =========================\n * 1. TABLE PARSER (UPDATED)\n * =========================\n */\nfunction parseTables(html) {\n  const tables = extractTablesWithTitles(html);\n  const rows = [];\n\n  for (const tableObj of tables) {\n    const trs = tableObj.html.match(/<tr[\\s\\S]*?<\\/tr>/gi) || [];\n\n    // add title as separator\n    if (tableObj.title) {\n      rows.push([`### ${tableObj.title}`]);\n    }\n\n    for (const tr of trs) {\n      const cells = [];\n      const tds = tr.match(/<(td|th)[\\s\\S]*?<\\/(td|th)>/gi) || [];\n\n      for (const td of tds) {\n        const text = stripTags(td);\n        if (text) cells.push(text);\n      }\n\n      if (cells.length >= 2) {\n        rows.push(cells);\n      }\n    }\n  }\n\n  return rows;\n}\n\n/**\n * =========================\n * 2. UNIVERSAL TEXT PARSER\n * =========================\n */\nfunction parseByContent(html) {\n  const rawTexts = html.match(/>([^<>]+)</g) || [];\n\n  const texts = rawTexts\n    .map(t => t.replace(/[><]/g, '').trim())\n    .filter(t =>\n      t &&\n      t.length > 1 &&\n      t.length < 100 &&\n      !t.includes('✦') &&\n      !t.includes('Shop') &&\n      !t.includes('Admin Dashboard')\n    );\n\n  const rows = [];\n\n  for (let i = 0; i < texts.length; i++) {\n    const t = texts[i];\n\n    if (/^\\$\\d+/.test(t)) {\n      const name = texts[i - 3] || '';\n      const desc = texts[i - 2] || '';\n      const category = texts[i - 1] || '';\n      const price = t;\n      const stock = texts[i + 1] || '';\n\n      const row = [\n        (name + ' ' + desc).trim(),\n        category,\n        price,\n        stock\n      ].filter(x => x);\n\n      if (row.length >= 3) {\n        rows.push(row);\n      }\n    }\n  }\n\n  return rows;\n}\n\n/**\n * =========================\n * RUN BOTH METHODS\n * =========================\n */\nlet structuredRows = parseTables(cleaned);\n\nif (structuredRows.length === 0) {\n  structuredRows = parseByContent(cleaned);\n}\n\n/**\n * =========================\n * REMOVE \"ACTION\" COLUMN\n * =========================\n */\nstructuredRows = structuredRows.map(row =>\n  row.filter(cell =>\n    !/delete|edit|update|action|add/i.test(cell)\n  )\n);\n\n/**\n * =========================\n * FORMAT STRUCTURED TEXT\n * =========================\n */\nconst structuredLines = structuredRows.map(row => row.join(' | '));\nconst structuredText = [...new Set(structuredLines)].join('\\n');\n\n/**\n * =========================\n * NEW: FULL TEXT OUTPUT\n * =========================\n */\nconst fullText = extractFullText(cleaned)\n  .split('\\n')\n  .map(line => line.trim())\n  .filter(line =>\n    line &&\n    !/delete|edit|update|action|add/i.test(line)\n  )\n  .join('\\n');\n\n/**\n * =========================\n * SAFETY OUTPUT\n * =========================\n */\nif (!structuredText && !fullText) {\n  return [{\n    json: {\n      success: false,\n      message: \"No usable data extracted\"\n    }\n  }];\n}\n\n/**\n * =========================\n * FINAL OUTPUT\n * =========================\n */\nreturn [{\n  json: {\n    success: true,\n    text: structuredText,   // tables (your original logic)\n    full_text: fullText     // NEW: full page text\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        -272
+      ],
+      "id": "a6faba7f-344b-477f-ada2-e7683b73d78b",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here is the product dataset in plain text format:\n\n{{ $json.text }}\n\nAnalyze each product line and return the structured JSON output as specified.",
+        "options": {
+          "systemMessage": "You are a senior e-commerce data analyst and product performance expert.\n\nYour role is to analyze raw product data provided as plain text and identify why certain products are not selling well.\n\nYou must:\n- Carefully parse each product line from the input text.\n- Each line follows this structure:\n  Product Name | Category | Price | Stock\n\n- Analyze each product individually.\n- Detect possible reasons for poor sales based on:\n  - Pricing (too high, too low, inconsistent)\n  - Product naming quality (unclear, duplicated words, poor branding)\n  - Category mismatch or lack of clarity\n  - Stock issues (too high stock may indicate low demand)\n  - Any anomalies or quality issues in the text\n\n- Return a structured and clean analysis.\n\nOutput format MUST be strictly:\n\n[\n  {\n    \"product_name\": \"...\",\n    \"category\": \"...\",\n    \"price\": \"...\",\n    \"stock\": \"...\",\n    \"issues\": [\"...\", \"...\"],\n    \"recommendations\": [\"...\", \"...\"]\n  }\n]\n\nRules:\n- Do NOT add explanations outside the JSON.\n- Do NOT summarize globally; focus on per-product analysis.\n- Be concise but precise.\n- If no issue is found, return an empty array for \"issues\".\n- Always provide at least one recommendation if an issue exists."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -112,
+        -272
+      ],
+      "id": "3d42952e-d2e6-4ccb-b44d-4d296fb2d6b1",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        -400
+      ],
+      "id": "ddf5ace3-5846-4666-a021-51a19d2b139b",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "oPngAOzJAvxLEJ1Y",
+          "name": "OpenRouter account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\nlet raw = data;\n\n// 🔥 Step 1: Try common paths\nif (raw.output) raw = raw.output;\nif (raw.result) raw = raw.result;\n\n// 🔥 Step 2: Parse until it's not a string anymore\ntry {\n  while (typeof raw === \"string\") {\n    raw = JSON.parse(raw);\n  }\n} catch (e) {\n  return [{ json: { text: \"\", valid: false, error: \"Invalid JSON parsing\" } }];\n}\n\n// 🔥 Step 3: Final check\nif (!Array.isArray(raw)) {\n  return [{\n    json: {\n      text: \"\",\n      valid: false,\n      error: \"Not an array\"\n    }\n  }];\n}\n\n// 🔥 Step 4: Build TEXT output\nlet lines = [];\nlet isGlobalValid = true;\n\nraw.forEach((product, index) => {\n\n  const isValid =\n    product.product_name &&\n    product.category &&\n    product.price &&\n    product.stock &&\n    Array.isArray(product.issues) &&\n    Array.isArray(product.recommendations) &&\n    (product.issues.length === 0 || product.recommendations.length > 0);\n\n  if (!isValid) {\n    isGlobalValid = false;\n  }\n\n  // 🔥 Format issues & recommendations as inline text\n  const issuesText = product.issues\n    .map((issue, i) => `${i}: ${issue}`)\n    .join(\" | \");\n\n  const recText = product.recommendations\n    .map((rec, i) => `${i}: ${rec}`)\n    .join(\" | \");\n\n  // 🔥 Build ONE LINE per product\n  const line = `${product.product_name} , ${product.category} , ${product.price} , ${product.stock} , ${issuesText} , ${recText}`;\n\n  lines.push(line);\n});\n\n// 🔥 Join all lines with \\n\nconst finalText = lines.join(\"\\n\");\n\n// ✅ Return EXACT format you want\nreturn [{\n  json: {\n    text: finalText,\n    valid: isGlobalValid\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        -272
+      ],
+      "id": "b86d0c0e-5c3f-42fa-b6b2-061827d6ee3e",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b7a8c7af-dce9-45a1-b37b-5c11fece8e45",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        -272
+      ],
+      "id": "f0334922-80ff-4ed0-85e8-03af7007e00f",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=## PRODUCT DATA\nBelow is the raw product dataset to analyze:\n\n<product_data>\n{{ $json.text }}\n</product_data>\n\n---\n\n## PREVIOUS ANALYSIS (if available)\nUse this as reference context to maintain consistency with prior findings:\n\n<previous_analysis>\n{{ $('AI Agent').item.json.output ?? \"No previous analysis available.\" }}\n</previous_analysis>\n\n---\n\n## ERROR REPORT (if available)\nIf the following contains an error, adjust your output to fix or address it:\n\n<error_report>\n{{ $('Code in JavaScript1').item.json.error ?? \"No errors reported.\" }}\n</error_report>\n\n---\n\nAnalyze each product line from the dataset above and return the structured JSON output following the schema defined in your instructions.",
+        "options": {
+          "systemMessage": "You are a senior e-commerce data analyst and product performance expert specializing in diagnosing poor-selling products.\n\n## YOUR ROLE\nAnalyze raw product data provided as plain text, identify performance issues per product, and return a clean structured JSON array.\n\n## INPUT FORMAT\nEach product line follows this exact structure:\n  Product Name | Category | Price | Stock\n\n## ANALYSIS CRITERIA\nFor each product, evaluate:\n- **Pricing**: Too high, too low, inconsistent with category norms, suspicious values (e.g., 0, negative, missing)\n- **Product Naming**: Unclear names, duplicated words, poor branding, special characters, encoding issues\n- **Category**: Mismatch with product type, vague or missing category\n- **Stock**: Unusually high stock may signal low demand; zero stock means unavailable\n- **Data Quality**: Malformed lines, missing fields, anomalies, encoding artifacts\n\n## CONTEXT AWARENESS\n- If a **previous analysis** is provided, use it as reference to ensure consistency and avoid contradicting prior valid findings.\n- If an **error report** is provided, take it into account to correct or adjust your output accordingly.\n\n## OUTPUT RULES\n- Return ONLY a valid JSON array. No text, explanation, or markdown outside the JSON.\n- One object per product.\n- If no issues are found, return an empty array `[]` for \"issues\".\n- Always provide at least one recommendation when an issue exists.\n- Never summarize globally — focus strictly on per-product analysis.\n\n## OUTPUT SCHEMA\n[\n  {\n    \"product_name\": \"string\",\n    \"category\": \"string\",\n    \"price\": \"string\",\n    \"stock\": \"string\",\n    \"issues\": [\"string\", ...],\n    \"recommendations\": [\"string\", ...]\n  }\n]"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        192,
+        96
+      ],
+      "id": "9ba1fec3-927e-4949-b612-ee25d6831481",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "5259f82a-feb9-4104-bf0e-d4a6cb7236c6",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "oPngAOzJAvxLEJ1Y",
+          "name": "OpenRouter account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\nlet raw = data;\n\n// 🔥 Step 1: Try common paths\nif (raw.output) raw = raw.output;\nif (raw.result) raw = raw.result;\n\n// 🔥 Step 2: Parse until it's not a string anymore\ntry {\n  while (typeof raw === \"string\") {\n    raw = JSON.parse(raw);\n  }\n} catch (e) {\n  return [{ json: { text: \"\", valid: false, error: \"Invalid JSON parsing\" } }];\n}\n\n// 🔥 Step 3: Final check\nif (!Array.isArray(raw)) {\n  return [{\n    json: {\n      text: \"\",\n      valid: false,\n      error: \"Not an array\"\n    }\n  }];\n}\n\n// 🔥 Step 4: Build TEXT output\nlet lines = [];\nlet isGlobalValid = true;\n\nraw.forEach((product, index) => {\n\n  const isValid =\n    product.product_name &&\n    product.category &&\n    product.price &&\n    product.stock &&\n    Array.isArray(product.issues) &&\n    Array.isArray(product.recommendations) &&\n    (product.issues.length === 0 || product.recommendations.length > 0);\n\n  if (!isValid) {\n    isGlobalValid = false;\n  }\n\n  // 🔥 Format issues & recommendations as inline text\n  const issuesText = product.issues\n    .map((issue, i) => `${i}: ${issue}`)\n    .join(\" | \");\n\n  const recText = product.recommendations\n    .map((rec, i) => `${i}: ${rec}`)\n    .join(\" | \");\n\n  // 🔥 Build ONE LINE per product\n  const line = `${product.product_name} , ${product.category} , ${product.price} , ${product.stock} , ${issuesText} , ${recText}`;\n\n  lines.push(line);\n});\n\n// 🔥 Join all lines with \\n\nconst finalText = lines.join(\"\\n\");\n\n// ✅ Return EXACT format you want\nreturn [{\n  json: {\n    text: finalText,\n    valid: isGlobalValid\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        96
+      ],
+      "id": "c3ea1962-c329-4140-b940-7d51de343458",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b7a8c7af-dce9-45a1-b37b-5c11fece8e45",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        464,
+        -48
+      ],
+      "id": "42cd5cab-16d7-4d09-a448-dc614b140e54",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "insight",
+          "mode": "list",
+          "cachedResultName": "insight"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_in": 0,
+            "year_in": 0,
+            "content": "={{ $('Code in JavaScript1').item.json.text }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_in",
+              "displayName": "id_in",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_in",
+              "displayName": "year_in",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        848,
+        -256
+      ],
+      "id": "ae76514f-201e-4a39-80a9-be0988ddfc99",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "insight",
+          "mode": "list",
+          "cachedResultName": "insight"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_in": 0,
+            "year_in": 0,
+            "content": "={{ $('Code in JavaScript2').item.json.text }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_in",
+              "displayName": "id_in",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_in",
+              "displayName": "year_in",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        848,
+        -80
+      ],
+      "id": "41d806c7-334d-480a-a00b-dc52544250fd",
+      "name": "Insert rows in a table1",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Puppeteer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Puppeteer": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "66de37d9-8b95-4aa7-a63f-3e7c0b6cf967",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cb419ad69e8aba8cf2108913785cdc48603a429b7ff4ca05f8b5d325e127e837"
+  },
+  "id": "encpgpjzsPgn9TSf",
+  "tags": []
+}

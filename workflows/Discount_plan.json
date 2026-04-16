@@ -1,0 +1,684 @@
+{
+  "name": "Discount_plan",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "3a80d9c2-87b5-4cce-819b-7868798f9ed7",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -720,
+        0
+      ],
+      "id": "dc071885-5465-4503-9c8e-eb1e4f026400",
+      "name": "Webhook",
+      "webhookId": "3a80d9c2-87b5-4cce-819b-7868798f9ed7"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fc10f31d-d62d-4139-9018-12c2aca0ed26",
+              "name": "query",
+              "value": "={{ $json.query }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -560,
+        0
+      ],
+      "id": "f9cf1874-9a15-4d9e-a7d4-61ec6d8b4dbc",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Generate a discount plan using the following inputs:\n\nDiscount Type: {{ $json.discount_type }}\nPercentage Value: {{ $json.percentage_value }}\nFixed Amount: {{ $json.fixed_value }}\nCountry: {{ $json.country }}\npurchase price : {{ $json.purchase_price }}\nproduct stock : {{ $json.product_stock }}\nTrigger Type: {{ $json.trigger_type }}\nMinimum Order Amount: {{ $json.order_amount }}\nCustomer Type: {{ $json.customer_type }}\n\nIMPORTANT — How to handle null values:\n- Any field showing \"null\" means the user did not select or provide that value. Completely ignore null fields — do not mention them, do not reference them, and do not treat them as relevant to the plan.\n- Only use the fields that contain actual values.\n- If {{ $json.discount_type }} is \"percentage\", use {{ $json.percentage_value }} as the discount. Ignore {{ $json.fixed_value }}.\n- If {{ $json.discount_type }} is \"fixed\", use {{ $json.fixed_value }} as the discount. Ignore {{ $json.percentage_value }}.\n- If {{ $json.trigger_type }} is \"order_amount\", use {{ $json.order_amount }} as the trigger threshold. Ignore {{ $json.customer_type }}.\n- If {{ $json.trigger_type }} is \"customer_type\", use {{ $json.customer_type }} as the trigger. Ignore {{ $json.order_amount }}.\n- If {{ $json.country }} is not null, include it as the target market context of the plan.",
+        "options": {
+          "systemMessage": "You are a professional discount strategy assistant. Your sole purpose is to generate clear, structured discount plans based on the exact inputs provided by the user. You must strictly follow these rules at all times:\n\nBEHAVIOR RULES:\n- Never generate tables, bullet lists, or numbered lists.\n- Never add suggestions, alternatives, or extra commentary beyond what is asked.\n- Never ignore or reinterpret the user's inputs — always use the exact values provided.\n- Always produce output in plain paragraph format only.\n- Always use \"---\" as a separator before each titled section, exactly like this: --- Section Title\n- The output must contain exactly two sections: the discount plan and the reasoning behind it.\n- Keep the tone professional, concise, and business-oriented.\n- Any field that contains the value null was not selected by the user. Completely ignore it — do not mention it, do not reference it.\n\nDISCOUNT GENERATION RULES:\n- The user provides either a percentage value or a fixed amount as a reference input. Your job is not to blindly restate it — your job is to generate a final recommended discount value based on it, adjusted by the trigger target and the stock level provided.\n- When the discount type is \"percentage\", use the user's percentage as your base. Adjust it upward or downward based on the stock level and the trigger target, then state the final generated percentage clearly.\n- When the discount type is \"fixed\", use the user's fixed amount as your base. Adjust it proportionally based on the stock level and the trigger target, then state the final generated fixed amount clearly.\n- Always clearly state the final generated discount value in the Discount Plan section — this is the value you recommend, derived from the user's input and adjusted for context.\n\nSTOCK EVALUATION RULES:\n- Stock level directly influences the discount intensity. Always factor it in when generating the final discount value.\n- If stock is high or overstocked, increase the discount aggressively to accelerate movement. A high-stock situation justifies pushing the discount above the user's base value.\n- If stock is moderate, keep the discount close to the user's base value, adjusting only slightly based on the trigger target.\n- If stock is low or limited, reduce the discount or keep it minimal — there is no business incentive to discount scarce inventory. The final generated value should reflect this restraint.\n- If stock is null, generate the discount based solely on the trigger target and the user's base value without stock adjustment.\n\nTRIGGER TARGET EVALUATION RULES:\n- When the trigger is a customer type (VIP, new client, client with bad feedback), evaluate the discount value in terms of relationship impact: retention, acquisition, or recovery. Adjust the final generated value to match the relationship goal.\n- When the trigger is a minimum order amount, evaluate the discount value as a purchasing incentive relative to the spend threshold. The final generated value should feel proportionate and rewarding.\n- If a country is provided, factor in the market context when calibrating the final discount value.\n\nOUTPUT FORMAT (strict — always and only this structure):\n\n--- Discount Plan\n[Define the discount strategy by clearly specifying the discount type (e.g., percentage, fixed amount, bundle, or dynamic). Indicate the user’s initial input value and present the optimized discount value, adjusted based on current stock levels and campaign objectives.\nClearly articulate the trigger condition (e.g., low stock clearance, overstock reduction, conversion boost threshold). Then, in one or two concise sentences, justify the recommended discount by explaining how it influences customer behavior and why it is strategically aligned with the inventory situation and business goals.]\n\n--- Why This Plan\n[Explain in two to four sentences why this generated discount configuration makes business sense, referencing both the trigger target and the stock level. Do not suggest changes. Do not mention alternatives.]"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -176,
+        0
+      ],
+      "id": "55827484-7233-4ee6-a093-305b1caf43d4",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Webhook GET params land directly on the json object\n\nconst data =$input.first().json.query ;\nreturn {\n  json: {\n    // --- DISCOUNT ---\n    discount_type:     data.discount_type    ?? null,  // \"percentage\" | \"fixed\"\n    percentage_value:  data.percentage_value  ?? null,  // filled if percentage chosen\n    fixed_value:       data.fixed_value      ?? null,  // filled if fixed chosen\n\n    // --- COUNTRY ---\n    country:           data.country          ?? null,\n    purchase_price:    data.Purchase_price    ?? null, \n    product_stock :    data.Product_stock     ?? null,\n    product_name :     data.Product_Name      ?? null,\n    commercial_model : data.the_commercial_model_code ?? null,\n    \n    // --- TRIGGER ---\n    trigger_type:      data.trigger_type     ?? null,  // \"order_amount\" | \"customer_type\"\n    order_amount:      data.order_amount     ?? null,  // filled if order_amount chosen\n    customer_type:     data.customer_type    ?? null,  // \"vip\" | \"new_user\"\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        0
+      ],
+      "id": "c76cabcc-00be-400a-ad2c-e34acab7d308",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -176,
+        144
+      ],
+      "id": "9e449d2a-aa41-4293-83bd-e1cad1f0542d",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "4AeXjE10gb60YVZw",
+          "name": "OpenRouter account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input from AI agent\nconst input =$('AI Agent').first().json.output ;\n\n// ─── 1. Clean & split into raw sections ───────────────────────────────────────\nconst sections = input\n  .split(/---\\s+/)          // split on \"--- \" (with optional spaces)\n  .map(s => s.trim())\n  .filter(Boolean);         // remove empty chunks\n\n// ─── 2. Parse each section into { title, body } ───────────────────────────────\nconst parsed = sections.map(section => {\n  const newlineIndex = section.indexOf('\\\\n');          // first line break\n  const title = section.slice(0, newlineIndex !== -1 ? newlineIndex : undefined).trim();\n  const body  = newlineIndex !== -1\n    ? section.slice(newlineIndex).replace(/\\\\n/g, ' ').trim()\n    : '';\n\n  return { title, body };\n});\n\n// ─── 3. Build a structured output object (keys derived from titles) ────────────\nconst structured = {};\n\nparsed.forEach(({ title, body }) => {\n  // Convert title to a camelCase key  e.g. \"Discount Plan\" → \"discountPlan\"\n  const key = title\n    .toLowerCase()\n    .replace(/[^a-z0-9 ]/g, '')          // strip special chars\n    .trim()\n    .replace(/\\s+(.)/g, (_, c) => c.toUpperCase()); // camelCase\n\n  structured[key] = {\n    title,\n    body,\n    // ── bonus: extract any percentages found in the body\n    percentages: [...body.matchAll(/(\\d+(?:\\.\\d+)?)\\s*%/g)].map(m => parseFloat(m[1])),\n    // ── bonus: extract any large numbers (e.g. stock units)\n    numbers: [...body.matchAll(/\\b(\\d{4,})\\b/g)].map(m => parseInt(m[1])),\n    // ── bonus: extract country mentions (capitalised proper nouns after \"in\")\n    locations: [...body.matchAll(/\\bin\\s+([A-Z][a-z]+)/g)].map(m => m[1]),\n  };\n});\n\n// ─── 4. Final output ──────────────────────────────────────────────────────────\nreturn [{ json: { sections: parsed, structured } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        0
+      ],
+      "id": "0b6a8942-905b-4fa9-ad06-4ed07fa546ad",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "discount_plan",
+          "mode": "list",
+          "cachedResultName": "discount_plan"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "valid": false,
+            "id": 0,
+            "year": 0,
+            "discount_type": "={{ $('Code in JavaScript').item.json.discount_type }}",
+            "country": "={{ $('Code in JavaScript').item.json.country }}",
+            "product_stock": "={{ $('Code in JavaScript').item.json.product_stock }}",
+            "reference_the_commercial_model_code": "={{ $('Code in JavaScript').item.json.commercial_model }}",
+            "product_name": "={{ $('Code in JavaScript').item.json.product_name }}",
+            "wholesale_price_of_product": "={{ $('Code in JavaScript').item.json.purchase_price }}",
+            "discount_plan_recommanded": "={{ $json.sections[0].title }}",
+            "why_descount": "={{ $json.sections[1].title }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": true,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "year",
+              "displayName": "year",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "discount_type",
+              "displayName": "discount_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "country",
+              "displayName": "country",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_stock",
+              "displayName": "product_stock",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_name",
+              "displayName": "product_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reference_the_commercial_model_code",
+              "displayName": "reference_the_commercial_model_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "wholesale_price_of_product",
+              "displayName": "wholesale_price_of_product",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "discount_plan_recommanded",
+              "displayName": "discount_plan_recommanded",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "why_descount",
+              "displayName": "why_descount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "valid",
+              "displayName": "valid",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "3c98ae78-e5b9-4685-a220-029cfb1077df",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "fxm02y6tKQOkjchx",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// n8n Code Node — Output Validator\n// Input: $input.first().json.output\n// Stock: $input.first().json.product_stock (or via node expression)\n// ============================================================\n\nconst output = $input.first().json.output;\nconst stock  = $('Edit Fields').first().json.query.Product_stock; // e.g. \"high\" | \"moderate\" | \"low\" | null\n\n// ── helpers ─────────────────────────────────────────────────\nconst errors   = [];\nconst warnings = [];\n\nfunction fail(rule, msg) { errors.push({ rule, message: msg }); }\nfunction warn(rule, msg) { warnings.push({ rule, message: msg }); }\n\n// ── 0. null / type guard ─────────────────────────────────────\nif (output === null || output === undefined || typeof output !== \"string\" || output.trim() === \"\") {\n  return [{\n    json: {\n      valid: false,\n      errors: [{ rule: \"INPUT_NULL\", message: \"output is null, undefined, or empty.\" }],\n      warnings: [],\n      summary: \"❌ Validation failed — output is missing.\"\n    }\n  }];\n}\n\nconst text = output.trim();\n\n// ============================================================\n// CHECK 1 — Output Structure (section headers & order)\n// ============================================================\nconst SECTION_REGEX  = /^---\\s+(.+)$/gm;\nconst PLAN_HEADER    = /^---\\s+Discount Plan\\s*$/m;\nconst WHY_HEADER     = /^---\\s+Why This Plan\\s*$/m;\n\nconst allSections = [...text.matchAll(SECTION_REGEX)];\n\nif (allSections.length !== 2) {\n  fail(\"STRUCTURE\", `Expected exactly 2 sections (--- headers), found ${allSections.length}.`);\n}\nif (!PLAN_HEADER.test(text)) {\n  fail(\"STRUCTURE\", 'Missing or malformed header \"--- Discount Plan\".');\n}\nif (!WHY_HEADER.test(text)) {\n  fail(\"STRUCTURE\", 'Missing or malformed header \"--- Why This Plan\".');\n}\n\n// Order check\nconst planIdx = text.search(PLAN_HEADER);\nconst whyIdx  = text.search(WHY_HEADER);\nif (planIdx !== -1 && whyIdx !== -1 && planIdx >= whyIdx) {\n  fail(\"STRUCTURE\", '\"--- Discount Plan\" must appear before \"--- Why This Plan\".');\n}\n\n// ============================================================\n// CHECK 2 — No Forbidden Formats\n// ============================================================\nconst forbiddenPatterns = [\n  { pattern: /\\n\\s*[-*]\\s+/,        label: \"bullet points (- or *)\" },\n  { pattern: /\\n\\s*\\d+\\.\\s+/,       label: \"numbered list (1. 2. …)\" },\n  { pattern: /\\|/,                   label: \"table separator (|)\" },\n];\nfor (const { pattern, label } of forbiddenPatterns) {\n  if (pattern.test(text)) {\n    fail(\"FORBIDDEN_FORMAT\", `Output contains forbidden formatting: ${label}.`);\n  }\n}\n\n// ============================================================\n// CHECK 3 — Paragraph-only format (no excessive blank lines)\n// ============================================================\n// Split into sections first, then check inside each section body\nconst sectionBodies = getSectionBodies(text);\n\nfor (const [title, body] of Object.entries(sectionBodies)) {\n  // More than 2 consecutive newlines = fragmented/list-like\n  if (/\\n{3,}/.test(body)) {\n    fail(\"PARAGRAPH_FORMAT\", `Section \"${title}\" contains excessive blank lines (fragmented text).`);\n  }\n}\n\n// ============================================================\n// CHECK 4 — Null field suppression\n// ============================================================\n// Collect null fields from input JSON\nconst inputJson = $input.first().json;\nconst nullFields = Object.entries(inputJson)\n  .filter(([, v]) => v === null)\n  .map(([k]) => k.toLowerCase());\n\n// Map field names to likely keywords that would appear in output\nconst nullKeywordMap = {\n  country:               [\"country\", \"region\", \"market\", \"territory\"],\n  product_stock:         [\"stock level\", \"inventory\", \"stock\"],\n  discount_type:         [],  // always required — skip null check\n  trigger_target:        [\"trigger\", \"vip\", \"minimum order\", \"new client\", \"bad feedback\"],\n  discount_value:        [],\n  // extend as needed\n};\n\nfor (const field of nullFields) {\n  const keywords = nullKeywordMap[field] ?? [field.replace(/_/g, \" \")];\n  for (const kw of keywords) {\n    const regex = new RegExp(`\\\\b${escapeRegex(kw)}\\\\b`, \"i\");\n    if (regex.test(text)) {\n      fail(\"NULL_FIELD_LEAK\", `Field \"${field}\" is null but its keyword \"${kw}\" appears in the output.`);\n    }\n  }\n}\n\n// ============================================================\n// CHECK 5 — Key elements inside \"Discount Plan\"\n// ============================================================\nconst planBody = sectionBodies[\"Discount Plan\"] ?? \"\";\n\n// Discount type keyword\nif (!/\\bpercentage\\b|\\bfixed\\b|\\bbundle\\b|\\bdynamic\\b/i.test(planBody)) {\n  fail(\"KEY_ELEMENTS\", '\"Discount Plan\" does not mention a discount type (percentage / fixed / bundle / dynamic).');\n}\n\n// At least one number (covers values like 10%, $50, 15 USD)\nif (!/\\d+/.test(planBody)) {\n  fail(\"KEY_ELEMENTS\", '\"Discount Plan\" contains no numeric values (base or final discount value missing).');\n}\n\n// Trigger condition keyword\nconst triggerKeywords = [\n  \"vip\", \"new client\", \"minimum order\", \"bad feedback\",\n  \"loyalty\", \"threshold\", \"clearance\", \"overstock\", \"campaign\"\n];\nconst hasTrigger = triggerKeywords.some(kw =>\n  new RegExp(`\\\\b${escapeRegex(kw)}\\\\b`, \"i\").test(planBody)\n);\nif (!hasTrigger) {\n  warn(\"KEY_ELEMENTS\", '\"Discount Plan\" has no detectable trigger condition keyword (VIP, minimum order, clearance, etc.).');\n}\n\n// ============================================================\n// CHECK 6 — Value Adjustment Logic (stock heuristic)\n// ============================================================\nconst STOCK_LOW      = 50;\nconst STOCK_HIGH     = 200;\n\nif (stock !== null && stock !== undefined) {\n  const stockNum = Number(stock);\n\n  if (isNaN(stockNum)) {\n    fail(\"VALUE_LOGIC\", `product_stock must be a number, got: \"${stock}\".`);\n  } else {\n    const numbers = extractNumbers(planBody);\n\n    if (numbers.length >= 2) {\n      const base  = numbers[0];\n      const final = numbers[numbers.length - 1];\n\n      if (stockNum > STOCK_HIGH && final < base) {\n        fail(\n          \"VALUE_LOGIC\",\n          `Stock is HIGH (${stockNum} > ${STOCK_HIGH}) — final discount value (${final}) should be ≥ base value (${base}), but it is lower.`\n        );\n      }\n\n      if (stockNum < STOCK_LOW && final > base) {\n        fail(\n          \"VALUE_LOGIC\",\n          `Stock is LOW (${stockNum} < ${STOCK_LOW}) — final discount value (${final}) should be ≤ base value (${base}), but it is higher.`\n        );\n      }\n\n      // moderate: just log in meta, no hard rule\n    } else {\n      warn(\n        \"VALUE_LOGIC\",\n        \"Could not extract at least 2 numbers from Discount Plan to compare base vs final value.\"\n      );\n    }\n  }\n}\n// ============================================================\n// CHECK 7 — Section Length Constraints\n// ============================================================\nconst whyBody = sectionBodies[\"Why This Plan\"] ?? \"\";\n\nconst planSentences = countSentences(planBody);\nconst whySentences  = countSentences(whyBody);\n\nif (planSentences < 1) {\n  fail(\"SECTION_LENGTH\", '\"Discount Plan\" must contain at least 1 sentence.');\n}\nif (whySentences < 2) {\n  fail(\"SECTION_LENGTH\", `\"Why This Plan\" must have at least 2 sentences (found ${whySentences}).`);\n}\nif (whySentences > 4) {\n  fail(\"SECTION_LENGTH\", `\"Why This Plan\" must have at most 4 sentences (found ${whySentences}).`);\n}\n\n// ============================================================\n// CHECK 8 — No Extra Sections\n// ============================================================\n// Already covered by Check 1 (allSections.length !== 2), but be explicit:\nif (allSections.length > 2) {\n  fail(\"EXTRA_SECTIONS\", `Only 2 sections allowed. Found extra section(s): ${allSections.slice(2).map(m => m[1]).join(\", \")}.`);\n}\n\n// ============================================================\n// CHECK 9 — Tone / Style (blacklist)\n// ============================================================\nconst casualPhrases = [\n  \"hey\", /\\byou should\\b/i, /\\bmaybe\\b/i, /\\byou could\\b/i,\n  /\\bconsider\\b/i, /\\bperhaps\\b/i, /\\bwhy not\\b/i, /\\btry to\\b/i\n];\n\nfor (const phrase of casualPhrases) {\n  const regex = phrase instanceof RegExp ? phrase : new RegExp(`\\\\b${escapeRegex(phrase)}\\\\b`, \"i\");\n  if (regex.test(text)) {\n    const label = phrase instanceof RegExp ? phrase.source : phrase;\n    fail(\"TONE\", `Output contains informal/suggestive language: \"${label}\".`);\n  }\n}\n\n// ============================================================\n// ── utility functions ────────────────────────────────────────\n// ============================================================\n\nfunction getSectionBodies(str) {\n  const result = {};\n  const matches = [...str.matchAll(/^---\\s+(.+)$/gm)];\n  for (let i = 0; i < matches.length; i++) {\n    const title = matches[i][1].trim();\n    const start = matches[i].index + matches[i][0].length;\n    const end   = i + 1 < matches.length ? matches[i + 1].index : str.length;\n    result[title] = str.slice(start, end).trim();\n  }\n  return result;\n}\n\nfunction countSentences(str) {\n  if (!str) return 0;\n  // Split on . ! ? followed by space or end, ignore abbreviations heuristically\n  const parts = str.split(/(?<=[.!?])\\s+(?=[A-Z\"'])/);\n  return parts.filter(s => s.trim().length > 4).length;\n}\n\nfunction extractNumbers(str) {\n  const matches = str.match(/\\d+(?:\\.\\d+)?/g);\n  return matches ? matches.map(Number) : [];\n}\n\nfunction escapeRegex(s) {\n  return s.replace(/[.*+?^${}()|[\\]\\\\]/g, \"\\\\$&\");\n}\n\n// ============================================================\n// ── Final Output ─────────────────────────────────────────────\n// ============================================================\n\nconst valid = errors.length === 0;\n\nreturn [{\n  json: {\n    valid,\n    summary: valid\n      ? `✅ Validation passed${warnings.length ? ` (${warnings.length} warning(s))` : \"\"}.`\n      : ` Validation failed — ${errors.length} error(s) found.`,\n    errors,\n    warnings,\n    meta: {\n      sections_found:    allSections.length,\n      plan_sentences:    countSentences(sectionBodies[\"Discount Plan\"] ?? \"\"),\n      why_sentences:     countSentences(sectionBodies[\"Why This Plan\"] ?? \"\"),\n      stock_input:       stock ?? null,\n      null_fields_found: nullFields,\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        0
+      ],
+      "id": "5c38a2ad-a019-4a40-99d1-c9a7de462a4d",
+      "name": "Verfication"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5d220edc-e8fb-4af5-8158-67487c60cc18",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        336,
+        0
+      ],
+      "id": "cb8edbb8-04b2-44ce-b63d-97cb88f166be",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Your previous discount plan output contained validation errors. You must fix it exactly as described below before resubmitting.\n\n════════════════════════════════════\nVALIDATION ERRORS TO FIX\n════════════════════════════════════\n{{ $('Verfication').item.json.errors.map(e => `[${e.rule}] ${e.message}`).join('\\n') }}\n\n════════════════════════════════════\nORIGINAL INPUTS (unchanged — use these again)\n════════════════════════════════════\nDiscount Type: {{ $('Edit Fields').first().json.query.discount_type }}\nPercentage Value: {{ $('Edit Fields').first().json.query.percentage_value }}\nFixed Amount: {{ $('Edit Fields').first().json.query.fixed_value }}\nCountry: {{ $('Edit Fields').first().json.query.country }}\nPurchase Price: {{ $('Edit Fields').item.json.query.Purchase_price }}\nProduct Stock: {{ $('Edit Fields').item.json.query.Product_stock }}\nTrigger Type: {{ $('Edit Fields').first().json.query.trigger_type }}\nMinimum Order Amount: {{ $('Edit Fields').first().json.query.order_amount }}\nCustomer Type: {{ $('Edit Fields').first().json.query.customer_type }}\n\n════════════════════════════════════\nCORRECTION RULES\n════════════════════════════════════\n- Address every listed error before producing the new output.\n- Do NOT explain what you changed. Do NOT apologize. Output ONLY the corrected plan.\n- Null fields must be completely absent from the output — no mention, no reference.\n- The output must contain EXACTLY two sections, in this order:\n\n--- Discount Plan\n--- Why This Plan\n\n- No bullet points, no numbered lists, no tables. Plain paragraphs only.\n- \"Why This Plan\" must contain between 2 and 4 sentences — no more, no less.\n- Tone must be strictly professional and business-oriented. Remove any casual or suggestive phrasing (e.g. \"maybe\", \"consider\", \"you could\", \"perhaps\", \"why not\").\n- The Discount Plan section must state a clear numeric discount value and a discount type keyword (percentage / fixed / bundle / dynamic).\n- If stock is HIGH (above 200 units), the final discount value must be GREATER THAN OR EQUAL TO the base input value.\n- If stock is LOW (below 50 units), the final discount value must be LESS THAN OR EQUAL TO the base input value.\n\nProduce the corrected output now.",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a professional discount strategy correction engine. You receive a previously generated discount plan that failed automated validation, along with the exact list of errors found and the original input data.  Your sole purpose is to produce a corrected version of the plan that passes all validation rules.  STRICT BEHAVIORAL RULES: - Output ONLY the corrected plan. No apologies, no explanations, no preamble, no sign-off. - Never acknowledge that you are correcting a previous output. - Never add commentary, alternatives, or suggestions beyond what the inputs require. - Never generate tables, bullet points, or numbered lists — plain paragraphs only. - Never mention fields that are null. Treat them as if they do not exist.  OUTPUT FORMAT (mandatory — no deviation): --- Discount Plan [One or more plain paragraph sentences. Must include: a discount type keyword (percentage / fixed / bundle / dynamic), a clear final numeric discount value, and a trigger condition.]  --- Why This Plan [Exactly 2 to 4 sentences. Professional tone only. No casual language.]  ERROR CORRECTION RULES — apply each one before writing: - STRUCTURE: Ensure exactly 2 sections exist, in this exact order: \"--- Discount Plan\" then \"--- Why This Plan\". No extra sections. - FORBIDDEN_FORMAT: Remove all bullet points (- or *), numbered lists, and pipe characters (\n). - PARAGRAPH_FORMAT: Remove excessive blank lines. Sections must be dense, continuous paragraphs. - NULL_FIELD_LEAK: Scan your output and remove any reference to fields that were null — including synonyms (e.g. \"region\", \"market\", \"territory\" for a null country field). - KEY_ELEMENTS: The Discount Plan section must contain at least one number and one of these words: percentage, fixed, bundle, dynamic. - VALUE_LOGIC: If stock is HIGH, the final discount value must be ≥ the base input value. If stock is LOW, the final discount value must be ≤ the base input value. - SECTION_LENGTH: \"Why This Plan\" must contain no fewer than 2 and no more than 4 sentences. - TONE: Remove all informal or suggestive words: \"hey\", \"maybe\", \"consider\", \"perhaps\", \"you could\", \"you should\", \"why not\", \"try to\".  You must internally verify your output against every rule above before responding. If any rule would be violated, rewrite until all rules pass."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        416,
+        320
+      ],
+      "id": "722dd9eb-0094-480f-bd73-ae1f137a359b",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $input.first().json.text;\nconst stock  = $('Edit Fields').first().json.query.Product_stock; // e.g. \"high\" | \"moderate\" | \"low\" | null\n\n// ── helpers ─────────────────────────────────────────────────\nconst errors   = [];\nconst warnings = [];\n\nfunction fail(rule, msg) { errors.push({ rule, message: msg }); }\nfunction warn(rule, msg) { warnings.push({ rule, message: msg }); }\n\n// ── 0. null / type guard ─────────────────────────────────────\nif (output === null || output === undefined || typeof output !== \"string\" || output.trim() === \"\") {\n  return [{\n    json: {\n      valid: false,\n      errors: [{ rule: \"INPUT_NULL\", message: \"output is null, undefined, or empty.\" }],\n      warnings: [],\n      summary: \"❌ Validation failed — output is missing.\"\n    }\n  }];\n}\n\nconst text = output.trim();\n\n// ============================================================\n// CHECK 1 — Output Structure (section headers & order)\n// ============================================================\nconst SECTION_REGEX  = /^---\\s+(.+)$/gm;\nconst PLAN_HEADER    = /^---\\s+Discount Plan\\s*$/m;\nconst WHY_HEADER     = /^---\\s+Why This Plan\\s*$/m;\n\nconst allSections = [...text.matchAll(SECTION_REGEX)];\n\nif (allSections.length !== 2) {\n  fail(\"STRUCTURE\", `Expected exactly 2 sections (--- headers), found ${allSections.length}.`);\n}\nif (!PLAN_HEADER.test(text)) {\n  fail(\"STRUCTURE\", 'Missing or malformed header \"--- Discount Plan\".');\n}\nif (!WHY_HEADER.test(text)) {\n  fail(\"STRUCTURE\", 'Missing or malformed header \"--- Why This Plan\".');\n}\n\n// Order check\nconst planIdx = text.search(PLAN_HEADER);\nconst whyIdx  = text.search(WHY_HEADER);\nif (planIdx !== -1 && whyIdx !== -1 && planIdx >= whyIdx) {\n  fail(\"STRUCTURE\", '\"--- Discount Plan\" must appear before \"--- Why This Plan\".');\n}\n\n// ============================================================\n// CHECK 2 — No Forbidden Formats\n// ============================================================\nconst forbiddenPatterns = [\n  { pattern: /\\n\\s*[-*]\\s+/,        label: \"bullet points (- or *)\" },\n  { pattern: /\\n\\s*\\d+\\.\\s+/,       label: \"numbered list (1. 2. …)\" },\n  { pattern: /\\|/,                   label: \"table separator (|)\" },\n];\nfor (const { pattern, label } of forbiddenPatterns) {\n  if (pattern.test(text)) {\n    fail(\"FORBIDDEN_FORMAT\", `Output contains forbidden formatting: ${label}.`);\n  }\n}\n\n// ============================================================\n// CHECK 3 — Paragraph-only format (no excessive blank lines)\n// ============================================================\n// Split into sections first, then check inside each section body\nconst sectionBodies = getSectionBodies(text);\n\nfor (const [title, body] of Object.entries(sectionBodies)) {\n  // More than 2 consecutive newlines = fragmented/list-like\n  if (/\\n{3,}/.test(body)) {\n    fail(\"PARAGRAPH_FORMAT\", `Section \"${title}\" contains excessive blank lines (fragmented text).`);\n  }\n}\n\n// ============================================================\n// CHECK 4 — Null field suppression\n// ============================================================\n// Collect null fields from input JSON\nconst inputJson = $input.first().json;\nconst nullFields = Object.entries(inputJson)\n  .filter(([, v]) => v === null)\n  .map(([k]) => k.toLowerCase());\n\n// Map field names to likely keywords that would appear in output\nconst nullKeywordMap = {\n  country:               [\"country\", \"region\", \"market\", \"territory\"],\n  product_stock:         [\"stock level\", \"inventory\", \"stock\"],\n  discount_type:         [],  // always required — skip null check\n  trigger_target:        [\"trigger\", \"vip\", \"minimum order\", \"new client\", \"bad feedback\"],\n  discount_value:        [],\n  // extend as needed\n};\n\nfor (const field of nullFields) {\n  const keywords = nullKeywordMap[field] ?? [field.replace(/_/g, \" \")];\n  for (const kw of keywords) {\n    const regex = new RegExp(`\\\\b${escapeRegex(kw)}\\\\b`, \"i\");\n    if (regex.test(text)) {\n      fail(\"NULL_FIELD_LEAK\", `Field \"${field}\" is null but its keyword \"${kw}\" appears in the output.`);\n    }\n  }\n}\n\n// ============================================================\n// CHECK 5 — Key elements inside \"Discount Plan\"\n// ============================================================\nconst planBody = sectionBodies[\"Discount Plan\"] ?? \"\";\n\n// Discount type keyword\nif (!/\\bpercentage\\b|\\bfixed\\b|\\bbundle\\b|\\bdynamic\\b/i.test(planBody)) {\n  fail(\"KEY_ELEMENTS\", '\"Discount Plan\" does not mention a discount type (percentage / fixed / bundle / dynamic).');\n}\n\n// At least one number (covers values like 10%, $50, 15 USD)\nif (!/\\d+/.test(planBody)) {\n  fail(\"KEY_ELEMENTS\", '\"Discount Plan\" contains no numeric values (base or final discount value missing).');\n}\n\n// Trigger condition keyword\nconst triggerKeywords = [\n  \"vip\", \"new client\", \"minimum order\", \"bad feedback\",\n  \"loyalty\", \"threshold\", \"clearance\", \"overstock\", \"campaign\"\n];\nconst hasTrigger = triggerKeywords.some(kw =>\n  new RegExp(`\\\\b${escapeRegex(kw)}\\\\b`, \"i\").test(planBody)\n);\nif (!hasTrigger) {\n  warn(\"KEY_ELEMENTS\", '\"Discount Plan\" has no detectable trigger condition keyword (VIP, minimum order, clearance, etc.).');\n}\n\n// ============================================================\n// CHECK 6 — Value Adjustment Logic (stock heuristic)\n// ============================================================\nconst STOCK_LOW      = 50;\nconst STOCK_HIGH     = 200;\n\nif (stock !== null && stock !== undefined) {\n  const stockNum = Number(stock);\n\n  if (isNaN(stockNum)) {\n    fail(\"VALUE_LOGIC\", `product_stock must be a number, got: \"${stock}\".`);\n  } else {\n    const numbers = extractNumbers(planBody);\n\n    if (numbers.length >= 2) {\n      const base  = numbers[0];\n      const final = numbers[numbers.length - 1];\n\n      if (stockNum > STOCK_HIGH && final < base) {\n        fail(\n          \"VALUE_LOGIC\",\n          `Stock is HIGH (${stockNum} > ${STOCK_HIGH}) — final discount value (${final}) should be ≥ base value (${base}), but it is lower.`\n        );\n      }\n\n      if (stockNum < STOCK_LOW && final > base) {\n        fail(\n          \"VALUE_LOGIC\",\n          `Stock is LOW (${stockNum} < ${STOCK_LOW}) — final discount value (${final}) should be ≤ base value (${base}), but it is higher.`\n        );\n      }\n\n      // moderate: just log in meta, no hard rule\n    } else {\n      warn(\n        \"VALUE_LOGIC\",\n        \"Could not extract at least 2 numbers from Discount Plan to compare base vs final value.\"\n      );\n    }\n  }\n}\n// ============================================================\n// CHECK 7 — Section Length Constraints\n// ============================================================\nconst whyBody = sectionBodies[\"Why This Plan\"] ?? \"\";\n\nconst planSentences = countSentences(planBody);\nconst whySentences  = countSentences(whyBody);\n\nif (planSentences < 1) {\n  fail(\"SECTION_LENGTH\", '\"Discount Plan\" must contain at least 1 sentence.');\n}\nif (whySentences < 2) {\n  fail(\"SECTION_LENGTH\", `\"Why This Plan\" must have at least 2 sentences (found ${whySentences}).`);\n}\nif (whySentences > 4) {\n  fail(\"SECTION_LENGTH\", `\"Why This Plan\" must have at most 4 sentences (found ${whySentences}).`);\n}\n\n// ============================================================\n// CHECK 8 — No Extra Sections\n// ============================================================\n// Already covered by Check 1 (allSections.length !== 2), but be explicit:\nif (allSections.length > 2) {\n  fail(\"EXTRA_SECTIONS\", `Only 2 sections allowed. Found extra section(s): ${allSections.slice(2).map(m => m[1]).join(\", \")}.`);\n}\n\n// ============================================================\n// CHECK 9 — Tone / Style (blacklist)\n// ============================================================\nconst casualPhrases = [\n  \"hey\", /\\byou should\\b/i, /\\bmaybe\\b/i, /\\byou could\\b/i,\n  /\\bconsider\\b/i, /\\bperhaps\\b/i, /\\bwhy not\\b/i, /\\btry to\\b/i\n];\n\nfor (const phrase of casualPhrases) {\n  const regex = phrase instanceof RegExp ? phrase : new RegExp(`\\\\b${escapeRegex(phrase)}\\\\b`, \"i\");\n  if (regex.test(text)) {\n    const label = phrase instanceof RegExp ? phrase.source : phrase;\n    fail(\"TONE\", `Output contains informal/suggestive language: \"${label}\".`);\n  }\n}\n\n// ============================================================\n// ── utility functions ────────────────────────────────────────\n// ============================================================\n\nfunction getSectionBodies(str) {\n  const result = {};\n  const matches = [...str.matchAll(/^---\\s+(.+)$/gm)];\n  for (let i = 0; i < matches.length; i++) {\n    const title = matches[i][1].trim();\n    const start = matches[i].index + matches[i][0].length;\n    const end   = i + 1 < matches.length ? matches[i + 1].index : str.length;\n    result[title] = str.slice(start, end).trim();\n  }\n  return result;\n}\n\nfunction countSentences(str) {\n  if (!str) return 0;\n  // Split on . ! ? followed by space or end, ignore abbreviations heuristically\n  const parts = str.split(/(?<=[.!?])\\s+(?=[A-Z\"'])/);\n  return parts.filter(s => s.trim().length > 4).length;\n}\n\nfunction extractNumbers(str) {\n  const matches = str.match(/\\d+(?:\\.\\d+)?/g);\n  return matches ? matches.map(Number) : [];\n}\n\nfunction escapeRegex(s) {\n  return s.replace(/[.*+?^${}()|[\\]\\\\]/g, \"\\\\$&\");\n}\n\n// ============================================================\n// ── Final Output ─────────────────────────────────────────────\n// ============================================================\n\nconst valid = errors.length === 0;\n\nreturn [{\n  json: {\n    valid,\n    summary: valid\n      ? `✅ Validation passed${warnings.length ? ` (${warnings.length} warning(s))` : \"\"}.`\n      : ` Validation failed — ${errors.length} error(s) found.`,\n    errors,\n    warnings,\n    meta: {\n      sections_found:    allSections.length,\n      plan_sentences:    countSentences(sectionBodies[\"Discount Plan\"] ?? \"\"),\n      why_sentences:     countSentences(sectionBodies[\"Why This Plan\"] ?? \"\"),\n      stock_input:       stock ?? null,\n      null_fields_found: nullFields,\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        288
+      ],
+      "id": "c26a28be-93cc-4ed6-96c1-a093347dcdbd",
+      "name": "verification2"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        416,
+        208
+      ],
+      "id": "e4cdc57c-0bb4-453e-8d99-f97fbcbe982e",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "oPngAOzJAvxLEJ1Y",
+          "name": "OpenRouter account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input from AI agent\nconst input =$('AI Agent').first().json.output ;\n\n// ─── 1. Clean & split into raw sections ───────────────────────────────────────\nconst sections = input\n  .split(/---\\s+/)          // split on \"--- \" (with optional spaces)\n  .map(s => s.trim())\n  .filter(Boolean);         // remove empty chunks\n\n// ─── 2. Parse each section into { title, body } ───────────────────────────────\nconst parsed = sections.map(section => {\n  const newlineIndex = section.indexOf('\\\\n');          // first line break\n  const title = section.slice(0, newlineIndex !== -1 ? newlineIndex : undefined).trim();\n  const body  = newlineIndex !== -1\n    ? section.slice(newlineIndex).replace(/\\\\n/g, ' ').trim()\n    : '';\n\n  return { title, body };\n});\n\n// ─── 3. Build a structured output object (keys derived from titles) ────────────\nconst structured = {};\n\nparsed.forEach(({ title, body }) => {\n  // Convert title to a camelCase key  e.g. \"Discount Plan\" → \"discountPlan\"\n  const key = title\n    .toLowerCase()\n    .replace(/[^a-z0-9 ]/g, '')          // strip special chars\n    .trim()\n    .replace(/\\s+(.)/g, (_, c) => c.toUpperCase()); // camelCase\n\n  structured[key] = {\n    title,\n    body,\n    // ── bonus: extract any percentages found in the body\n    percentages: [...body.matchAll(/(\\d+(?:\\.\\d+)?)\\s*%/g)].map(m => parseFloat(m[1])),\n    // ── bonus: extract any large numbers (e.g. stock units)\n    numbers: [...body.matchAll(/\\b(\\d{4,})\\b/g)].map(m => parseInt(m[1])),\n    // ── bonus: extract country mentions (capitalised proper nouns after \"in\")\n    locations: [...body.matchAll(/\\bin\\s+([A-Z][a-z]+)/g)].map(m => m[1]),\n  };\n});\n\n// ─── 4. Final output ──────────────────────────────────────────────────────────\nreturn [{ json: { sections: parsed, structured } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        288
+      ],
+      "id": "abce5b20-69d1-4503-b450-98e84b73e0f1",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "discount_plan",
+          "mode": "list",
+          "cachedResultName": "discount_plan"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "valid": false,
+            "id": 0,
+            "year": 0,
+            "discount_type": "={{ $('Code in JavaScript').item.json.discount_type }}",
+            "country": "={{ $('Code in JavaScript').item.json.country }}",
+            "product_stock": "={{ $('Code in JavaScript').item.json.product_stock }}",
+            "reference_the_commercial_model_code": "={{ $('Code in JavaScript').item.json.commercial_model }}",
+            "product_name": "={{ $('Code in JavaScript').item.json.product_name }}",
+            "wholesale_price_of_product": "={{ $('Code in JavaScript').item.json.purchase_price }}",
+            "discount_plan_recommanded": "={{ $('Code in JavaScript2').item.json.sections[0].title }}",
+            "why_descount": "={{ $('Code in JavaScript2').item.json.sections[1].title }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": true,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "year",
+              "displayName": "year",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "discount_type",
+              "displayName": "discount_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "country",
+              "displayName": "country",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_stock",
+              "displayName": "product_stock",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_name",
+              "displayName": "product_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reference_the_commercial_model_code",
+              "displayName": "reference_the_commercial_model_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "wholesale_price_of_product",
+              "displayName": "wholesale_price_of_product",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "discount_plan_recommanded",
+              "displayName": "discount_plan_recommanded",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "why_descount",
+              "displayName": "why_descount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "valid",
+              "displayName": "valid",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1056,
+        288
+      ],
+      "id": "ae94d45b-cca4-4843-8113-21fc8d4738ee",
+      "name": "Insert rows in a table1",
+      "credentials": {
+        "postgres": {
+          "id": "fxm02y6tKQOkjchx",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Verfication",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verfication": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "verification2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "verification2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "dynamic",
+    "timezone": "Africa/Tunis",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "3035e0a6-6712-4d7e-a34b-55d4eea25367",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cb419ad69e8aba8cf2108913785cdc48603a429b7ff4ca05f8b5d325e127e837"
+  },
+  "id": "v0IlJFiScs4kMwCd",
+  "tags": []
+}

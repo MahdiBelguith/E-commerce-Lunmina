@@ -1,0 +1,4130 @@
+{
+  "name": "competition_reppor_generator",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "test ",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "market type",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "country"
+            },
+            {
+              "fieldLabel": "Do you want a repport for specefic Website ?",
+              "fieldType": "radio",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Yes"
+                  },
+                  {
+                    "option": "No"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        -1568,
+        -416
+      ],
+      "id": "b4a9d0e5-0039-4402-a408-b32e75c2e389",
+      "name": "On form submission",
+      "webhookId": "b8946cab-4ff0-4423-b8ac-c364881a5804"
+    },
+    {
+      "parameters": {
+        "model": "=mistral",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        2432,
+        -800
+      ],
+      "id": "87e76438-d61b-406e-90c0-1cd218a516b4",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "uwixfMYJCGtWGn2c",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        928,
+        -144
+      ],
+      "id": "3848ce19-8c17-443f-9db1-dc46405cd2b7",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "MwfjNq7ruLpbyk1N",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.all();\n\nconst urlsSet = new Set();\n\nfor (const item of input) {\n  const raw =\n    item.json.text ||\n    item.json.output ||\n    item.json.response ||\n    \"\";\n\n  if (!raw) continue;\n\n  const lines = raw.split(/\\r?\\n/);\n\n  for (const line of lines) {\n    const url = line.trim();\n\n    if (url && url.startsWith(\"http\")) {\n      urlsSet.add(url);\n    }\n  }\n}\n\nconst urls = Array.from(urlsSet);\n\nconst result = {};\n\nurls.forEach((url, i) => {\n  result[`output${i + 1}`] = url;\n});\n\nreturn [{ json: result }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        -400
+      ],
+      "id": "95273050-180d-4114-ae87-96fc01e48fcf",
+      "name": "extracting_urls"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the following webpage content that was scraped from competitor websites.\nExtract structured e-commerce intelligence data.\nURL:\n{{ $('Edit Fields').item.json.url1 }}\nWebpage Content:\n{{ $('content1').item.json.content1 }}\nURL:\n{{ $('Edit Fields').item.json.url2 }}\nWebpage Content:\n{{ $('content2').item.json.content2 }}\nURL:\n{{ $('Edit Fields').item.json.url3 }}\nWebpage Content:\n{{ $('content3').item.json.content3 }}\nURL:\n{{ $('Edit Fields').item.json.url4 }}\nWebpage Content:\n{{ $json.content4 }}\nInstructions:\n• Analyze only the provided content\n• Do not access external websites\n• Do not hallucinate\n• Return structured JSON only",
+        "options": {
+          "systemMessage": "You are an E-commerce Data Extraction Agent used inside an n8n workflow.\n\nThe workflow provides MULTIPLE cleaned webpage contents concatenated into a single input.\n\n--------------------------------\nINPUT STRUCTURE\n--------------------------------\n\nThe user message contains multiple entries.\n\nEach entry follows this structure:\n\nURL: <website_url>\nWebpage Content:\n<cleaned text content OR error message>\n\nEntries are separated logically in the text.\n\nExample:\n\nURL: https://example1.com\nWebpage Content:\nSome cleaned text...\n\nURL: https://example2.com\nWebpage Content:\nERROR: 403 Forbidden\n\n--------------------------------\nYOUR TASK\n--------------------------------\n\n1. Detect and split each URL + CONTENT pair\n2. Process EACH entry independently\n3. Return ONE structured result per URL\n\n--------------------------------\nPRIMARY DATA SOURCE\n--------------------------------\n\nUse ONLY the provided CONTENT for each URL.\n\nThe content is already:\n- cleaned\n- reduced\n- may be truncated\n\nDo NOT expect full HTML.\n\n--------------------------------\nERROR HANDLING (VERY IMPORTANT)\n--------------------------------\n\nIf CONTENT contains:\n- \"ERROR\"\n- \"403\"\n- \"404\"\n- \"Access Denied\"\n- empty or extremely short text (< 200 characters)\n\nTHEN:\n\n- Do NOT attempt extraction\n- Mark fields as \"not_found\"\n- Add an additional field:\n\n\"source_status\": \"error_detected\"\n\nOtherwise:\n\n\"source_status\": \"ok\"\n\n--------------------------------\nFALLBACK RULE (STRICT)\n--------------------------------\n\nIf:\n- content is empty or unusable\n- AND no meaningful data is available\n\nTHEN you MAY use the URL to retrieve minimal information.\n\nConstraints:\n- Only homepage\n- No deep browsing\n- No guessing\n\n--------------------------------\nDATA RELIABILITY RULES\n--------------------------------\n\n- Do NOT hallucinate\n- Do NOT infer beyond visible text\n- If missing → \"not_found\"\n- Prefer explicit mentions\n\n--------------------------------\nEXTRACTION TASK\n--------------------------------\n\nExtract structured competitive intelligence for EACH URL.\n\n--------------------------------\nSTORE\n--------------------------------\n\n* brand_name\n* website_url (MUST match the input URL)\n* market_category\n* market_scope\n\n--------------------------------\nPRODUCT CATALOG\n--------------------------------\n\n* main_product_categories\n* product_types_sold\n* example_products\n* catalog_depth\n\n--------------------------------\nPRICING\n--------------------------------\n\n* price_range_detected\n* example_product_prices\n* pricing_position\n\n--------------------------------\nCUSTOMER REVIEWS\n--------------------------------\n\n* reviews_available\n* rating_detected\n* review_volume_indicator\n\n--------------------------------\nSOCIAL MEDIA\n--------------------------------\n\nDetect mentions of:\n\n* facebook\n* instagram\n* tiktok\n* twitter/x\n* youtube\n* linkedin\n\n--------------------------------\nCUSTOMER EXPERIENCE\n--------------------------------\n\n* shipping_information_present\n* return_policy_present\n* support_channels\n* live_chat_detected\n\n--------------------------------\nTECH STACK SIGNALS\n--------------------------------\n\nDetect ONLY if clearly visible:\n\n* Shopify\n* WooCommerce\n* Magento\n* Stripe\n* PayPal\n* Apple Pay\n* live chat tools\n\n--------------------------------\nOUTPUT FORMAT\n--------------------------------\n\nReturn JSON only.\n\n{\n  \"stores\":[\n    {\n      \"website_url\":\"\",\n      \"source_status\":\"ok | error_detected\",\n      \"brand_name\":\"\",\n      \"market_category\":\"\",\n      \"market_scope\":\"\",\n      \"product_catalog\":{\n        \"main_product_categories\":\"\",\n        \"product_types_sold\":\"\",\n        \"example_products\":\"\",\n        \"catalog_depth\":\"\"\n      },\n      \"pricing\":{\n        \"price_range_detected\":\"\",\n        \"example_product_prices\":\"\",\n        \"pricing_position\":\"\"\n      },\n      \"customer_reviews\":{\n        \"reviews_available\":\"\",\n        \"rating_detected\":\"\",\n        \"review_volume_indicator\":\"\"\n      },\n      \"social_media\":{\n        \"facebook\":\"\",\n        \"instagram\":\"\",\n        \"tiktok\":\"\",\n        \"twitter_x\":\"\",\n        \"youtube\":\"\",\n        \"linkedin\":\"\"\n      },\n      \"customer_experience\":{\n        \"shipping_information_present\":\"\",\n        \"return_policy_present\":\"\",\n        \"support_channels\":\"\",\n        \"live_chat_detected\":\"\"\n      },\n      \"tech_stack_signals\":[]\n    }\n  ]\n}\n\n--------------------------------\nIMPORTANT\n--------------------------------\n\n- Output MUST contain one object per URL\n- Do NOT merge multiple websites into one\n- Preserve input order\n- website_url must exactly match input\n- If content is invalid → still return object with \"error_detected\""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        912,
+        16
+      ],
+      "id": "da810fa8-46d5-4681-a5b1-6ddff58ec9e7",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url1 }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": " Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "Accept",
+              "value": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "en-US,en;q=0.9,fr;q=0.8"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "gzip, deflate, br"
+            },
+            {
+              "name": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "name": "Upgrade-Insecure-Requests",
+              "value": "1"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "name": "Pragma",
+              "value": "no-cache"
+            },
+            {
+              "name": "Upgrade-Insecure-Requests",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        992,
+        224
+      ],
+      "id": "a5ce629f-3499-44fb-aa31-9c04a50e65f8",
+      "name": "link1",
+      "retryOnFail": false,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b1469889-71fd-4c24-a445-458952eb1ecc",
+              "name": "url1",
+              "value": "={{ $('extracting_urls').item.json.output1 }}",
+              "type": "string"
+            },
+            {
+              "id": "d71f8f3f-aa06-40b5-9764-beb0eab5e1f5",
+              "name": "url2",
+              "value": "={{ $('extracting_urls').item.json.output2 }}",
+              "type": "string"
+            },
+            {
+              "id": "4eec1a2d-c28d-401a-b2cf-116320be0db5",
+              "name": "url3",
+              "value": "={{ $('extracting_urls').item.json.output3 }}",
+              "type": "string"
+            },
+            {
+              "id": "a9e7c807-b243-4d28-80cd-fbc3da4c6948",
+              "name": "url4",
+              "value": "={{ $('extracting_urls').item.json.output4 }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        176,
+        -400
+      ],
+      "id": "e4cf3645-63c5-4ad3-8527-d5c196e6abd1",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        992,
+        464
+      ],
+      "id": "1754b421-ad72-4473-addd-e5a5545635b9",
+      "name": "Wait",
+      "webhookId": "e7c2ecec-9471-4474-a85f-913a7f85721e"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3536,
+        464
+      ],
+      "id": "fbbccbda-3f66-4447-a92e-555f402e4079",
+      "name": "Wait1",
+      "webhookId": "e7c2ecec-9471-4474-a85f-913a7f85721e"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3040,
+        192
+      ],
+      "id": "28055fd9-8d69-4e62-aafb-647dd5d1e9a9",
+      "name": "Wait2",
+      "webhookId": "78890be9-6c0e-4094-bed9-24569879e286"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        4832,
+        496
+      ],
+      "id": "6ea54f42-eb76-4aef-9946-e9f9141fc090",
+      "name": "Wait3",
+      "webhookId": "e7c2ecec-9471-4474-a85f-913a7f85721e"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        4336,
+        176
+      ],
+      "id": "c52bbd4a-3c6b-4fd1-a47a-68405355fabe",
+      "name": "Wait4",
+      "webhookId": "78890be9-6c0e-4094-bed9-24569879e286"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        5872,
+        400
+      ],
+      "id": "bfacb450-3168-490e-a014-b21f402684c4",
+      "name": "Wait5",
+      "webhookId": "e7c2ecec-9471-4474-a85f-913a7f85721e"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        5152,
+        176
+      ],
+      "id": "f902943d-6c51-470d-9b9f-17188314f1f3",
+      "name": "Wait6",
+      "webhookId": "78890be9-6c0e-4094-bed9-24569879e286"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f18cd16e-c592-439a-b1a8-e4712572ca04",
+              "leftValue": "={{ $json.error.stack }}",
+              "rightValue": "=getaddrinfo ENOTFOUND domain.com",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "76bb7792-b68f-4cfb-9cc2-02e0ae9f479d",
+              "leftValue": "={{ $json.error.stack }}",
+              "rightValue": "ENODATA",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1424,
+        288
+      ],
+      "id": "6fc5c52d-be42-4ecf-9bfe-1f2595d28d15",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f18cd16e-c592-439a-b1a8-e4712572ca04",
+              "leftValue": "={{ $json.error.stack }}",
+              "rightValue": "=getaddrinfo ENOTFOUND domain.com",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "76bb7792-b68f-4cfb-9cc2-02e0ae9f479d",
+              "leftValue": "={{ $json.error.stack }}",
+              "rightValue": "ENODATA",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3392,
+        320
+      ],
+      "id": "b5b04ef1-727e-480d-acd5-37e9b13485e2",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f18cd16e-c592-439a-b1a8-e4712572ca04",
+              "leftValue": "={{ $json.error.stack }}",
+              "rightValue": "=getaddrinfo ENOTFOUND domain.com",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "76bb7792-b68f-4cfb-9cc2-02e0ae9f479d",
+              "leftValue": "={{ $json.error.stack }}",
+              "rightValue": "ENODATA",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4640,
+        304
+      ],
+      "id": "1af23036-bf18-44e1-bbfe-cfaea7367511",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f18cd16e-c592-439a-b1a8-e4712572ca04",
+              "leftValue": "={{ $json.error.stack }}",
+              "rightValue": "=getaddrinfo ENOTFOUND domain.com",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "76bb7792-b68f-4cfb-9cc2-02e0ae9f479d",
+              "leftValue": "={{ $json.error.stack }}",
+              "rightValue": "ENODATA",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        6064,
+        272
+      ],
+      "id": "6e6a231f-1116-4ef2-bcd9-be36b63263eb",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Edit Fields').item.json.url4 }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": " Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "Accept",
+              "value": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "en-US,en;q=0.9,fr;q=0.8"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "gzip, deflate, br"
+            },
+            {
+              "name": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "name": "Upgrade-Insecure-Requests",
+              "value": "1"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "name": "Pragma",
+              "value": "no-cache"
+            },
+            {
+              "name": "Upgrade-Insecure-Requests",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        5872,
+        160
+      ],
+      "id": "dce2d569-ee8c-4bed-a218-165496627195",
+      "name": "link4",
+      "retryOnFail": false,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "17133423-6246-4705-8af2-3d4431791e7f",
+              "name": "content4",
+              "value": "={{ $json.title }}\n{{ $json.metaDescription }}\n{{ $json.headings.h1[0] }}\n{{ $json.headings.h2[0] }}\n{{ $json.headings.h2[1] }}\n{{ $json.headings.h2[2] }}\n{{ $json.headings.h2[3] }}\n{{ $json.headings.h2[4] }}\n{{ $json.headings.h2[5] }}\n{{ $json.headings.h2[6] }}\n{{ $json.headings.h2[7] }}\n{{ $json.headings.h2[8] }}\n{{ $json.headings.h2[9] }}\n{{ $json.content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        6304,
+        240
+      ],
+      "id": "8a16b4f3-c1a0-4305-ad99-451e324ec0cc",
+      "name": "content4"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "86d12915-1084-4626-be30-98947c99b03d",
+              "name": "content1",
+              "value": "={{ $json.title }}\n{{ $json.metaDescription }}\n{{ $json.headings.h1[0] }}\n{{ $json.headings.h2[0] }}\n{{ $json.headings.h2[1] }}\n{{ $json.headings.h2[2] }}\n{{ $json.headings.h2[3] }}\n{{ $json.headings.h2[4] }}\n{{ $json.headings.h2[5] }}\n{{ $json.headings.h2[6] }}\n{{ $json.headings.h2[7] }}\n{{ $json.headings.h2[8] }}\n{{ $json.headings.h2[9] }}\n{{ $json.content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2848,
+        192
+      ],
+      "id": "d11074c9-cfdc-4a18-b647-984a2f66bf26",
+      "name": "content1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6814e3d6-13d0-440b-a99a-b3ddb186a980",
+              "name": "content2",
+              "value": "={{ $json.title }}\n{{ $json.metaDescription }}\n{{ $json.headings.h1[0] }}\n{{ $json.headings.h1[1] }}\n{{ $json.headings.h2[0] }}\n{{ $json.headings.h2[1] }}\n{{ $json.headings.h2[2] }}\n{{ $json.headings.h2[3] }}\n{{ $json.headings.h2[4] }}\n{{ $json.headings.h2[5] }}\n{{ $json.headings.h2[6] }}\n{{ $json.headings.h2[7] }}\n{{ $json.headings.h2[8] }}\n{{ $json.headings.h2[9] }}\n{{ $json.content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4128,
+        176
+      ],
+      "id": "358fc57a-5604-4549-a78e-e80a68f33501",
+      "name": "content2"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Edit Fields').item.json.url3 }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": " Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "Accept",
+              "value": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "en-US,en;q=0.9,fr;q=0.8"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "gzip, deflate, br"
+            },
+            {
+              "name": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "name": "Upgrade-Insecure-Requests",
+              "value": "1"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "name": "Pragma",
+              "value": "no-cache"
+            },
+            {
+              "name": "Upgrade-Insecure-Requests",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        4496,
+        176
+      ],
+      "id": "81fb09fb-011d-47fa-b39b-b2f087d1f80d",
+      "name": "link3",
+      "retryOnFail": false,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Edit Fields').item.json.url2 }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": " Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "Accept",
+              "value": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "en-US,en;q=0.9,fr;q=0.8"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "gzip, deflate, br"
+            },
+            {
+              "name": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "name": "Upgrade-Insecure-Requests",
+              "value": "1"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "name": "Pragma",
+              "value": "no-cache"
+            },
+            {
+              "name": "Upgrade-Insecure-Requests",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3296,
+        192
+      ],
+      "id": "b185275e-f422-45ba-90b2-3c9c5bade776",
+      "name": "link2",
+      "retryOnFail": false,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b6196409-9810-450f-a0a8-5f50d59ad323",
+              "name": "content3",
+              "value": "={{ $json.title }}\n{{ $json.metaDescription }}\n{{ $json.headings.h1[0] }}\n{{ $json.headings.h2[0] }}\n{{ $json.headings.h2[3] }}\n{{ $json.headings.h2[3] }}\n{{ $json.headings.h2[4] }}\n{{ $json.headings.h2[5] }}\n{{ $json.headings.h2[6] }}\n{{ $json.headings.h2[7] }}\n{{ $json.headings.h2[8] }}\n{{ $json.headings.h2[9] }}\n{{ $json.content }}\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4928,
+        160
+      ],
+      "id": "ecddbc26-857e-4185-9433-675537638d76",
+      "name": "content3"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get raw HTML from previous node\nconst html = $input.first().json.data || \"\";\n\n// -------- CLEAN HTML --------\nfunction cleanHTML(html) {\n  return html\n    .replace(/<script[\\s\\S]*?<\\/script>/gi, '')\n    .replace(/<style[\\s\\S]*?<\\/style>/gi, '')\n    .replace(/<noscript[\\s\\S]*?<\\/noscript>/gi, '')\n    .replace(/<iframe[\\s\\S]*?<\\/iframe>/gi, '')\n    .replace(/<svg[\\s\\S]*?<\\/svg>/gi, '')\n    .replace(/<[^>]+>/g, ' ') // remove all tags\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\n// -------- EXTRACT SPECIFIC DATA --------\nfunction extractBetween(html, tag) {\n  const regex = new RegExp(`<${tag}[^>]*>(.*?)<\\\\/${tag}>`, \"i\");\n  const match = html.match(regex);\n  return match ? match[1].replace(/<[^>]+>/g, '').trim() : \"\";\n}\n\n// Title\nconst title = extractBetween(html, \"title\");\n\n// Meta description\nconst metaDescMatch = html.match(/<meta\\s+name=[\"']description[\"']\\s+content=[\"'](.*?)[\"']/i);\nconst metaDescription = metaDescMatch ? metaDescMatch[1] : \"\";\n\n// Headings (H1, H2)\nconst h1Matches = [...html.matchAll(/<h1[^>]*>(.*?)<\\/h1>/gi)].map(m => m[1].replace(/<[^>]+>/g, '').trim());\nconst h2Matches = [...html.matchAll(/<h2[^>]*>(.*?)<\\/h2>/gi)].map(m => m[1].replace(/<[^>]+>/g, '').trim());\n\n// -------- MAIN TEXT CLEANING --------\nlet cleanedText = cleanHTML(html);\n\n// 🔥 LIMIT SIZE (VERY IMPORTANT)\nconst MAX_LENGTH = 8000;\nif (cleanedText.length > MAX_LENGTH) {\n  cleanedText = cleanedText.substring(0, MAX_LENGTH);\n}\n\n// -------- RETURN STRUCTURED OUTPUT --------\nreturn [\n  {\n    json: {\n      title,\n      metaDescription,\n      headings: {\n        h1: h1Matches.slice(0, 5),\n        h2: h2Matches.slice(0, 10),\n      },\n      content: cleanedText\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        192
+      ],
+      "id": "640ed964-1517-422c-a4da-87a203acd3c3",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get raw HTML from previous node\nconst html = $input.first().json.data || \"\";\n\n// -------- CLEAN HTML --------\nfunction cleanHTML(html) {\n  return html\n    .replace(/<script[\\s\\S]*?<\\/script>/gi, '')\n    .replace(/<style[\\s\\S]*?<\\/style>/gi, '')\n    .replace(/<noscript[\\s\\S]*?<\\/noscript>/gi, '')\n    .replace(/<iframe[\\s\\S]*?<\\/iframe>/gi, '')\n    .replace(/<svg[\\s\\S]*?<\\/svg>/gi, '')\n    .replace(/<[^>]+>/g, ' ') // remove all tags\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\n// -------- EXTRACT SPECIFIC DATA --------\nfunction extractBetween(html, tag) {\n  const regex = new RegExp(`<${tag}[^>]*>(.*?)<\\\\/${tag}>`, \"i\");\n  const match = html.match(regex);\n  return match ? match[1].replace(/<[^>]+>/g, '').trim() : \"\";\n}\n\n// Title\nconst title = extractBetween(html, \"title\");\n\n// Meta description\nconst metaDescMatch = html.match(/<meta\\s+name=[\"']description[\"']\\s+content=[\"'](.*?)[\"']/i);\nconst metaDescription = metaDescMatch ? metaDescMatch[1] : \"\";\n\n// Headings (H1, H2)\nconst h1Matches = [...html.matchAll(/<h1[^>]*>(.*?)<\\/h1>/gi)].map(m => m[1].replace(/<[^>]+>/g, '').trim());\nconst h2Matches = [...html.matchAll(/<h2[^>]*>(.*?)<\\/h2>/gi)].map(m => m[1].replace(/<[^>]+>/g, '').trim());\n\n// -------- MAIN TEXT CLEANING --------\nlet cleanedText = cleanHTML(html);\n\n// 🔥 LIMIT SIZE (VERY IMPORTANT)\nconst MAX_LENGTH = 8000;\nif (cleanedText.length > MAX_LENGTH) {\n  cleanedText = cleanedText.substring(0, MAX_LENGTH);\n}\n\n// -------- RETURN STRUCTURED OUTPUT --------\nreturn [\n  {\n    json: {\n      title,\n      metaDescription,\n      headings: {\n        h1: h1Matches.slice(0, 5),\n        h2: h2Matches.slice(0, 10),\n      },\n      content: cleanedText\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3888,
+        176
+      ],
+      "id": "193761e2-604a-4a53-9142-49b2053ad6de",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get raw HTML from previous node\nconst html = $input.first().json.data || \"\";\n\n// -------- CLEAN HTML --------\nfunction cleanHTML(html) {\n  return html\n    .replace(/<script[\\s\\S]*?<\\/script>/gi, '')\n    .replace(/<style[\\s\\S]*?<\\/style>/gi, '')\n    .replace(/<noscript[\\s\\S]*?<\\/noscript>/gi, '')\n    .replace(/<iframe[\\s\\S]*?<\\/iframe>/gi, '')\n    .replace(/<svg[\\s\\S]*?<\\/svg>/gi, '')\n    .replace(/<[^>]+>/g, ' ') // remove all tags\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\n// -------- EXTRACT SPECIFIC DATA --------\nfunction extractBetween(html, tag) {\n  const regex = new RegExp(`<${tag}[^>]*>(.*?)<\\\\/${tag}>`, \"i\");\n  const match = html.match(regex);\n  return match ? match[1].replace(/<[^>]+>/g, '').trim() : \"\";\n}\n\n// Title\nconst title = extractBetween(html, \"title\");\n\n// Meta description\nconst metaDescMatch = html.match(/<meta\\s+name=[\"']description[\"']\\s+content=[\"'](.*?)[\"']/i);\nconst metaDescription = metaDescMatch ? metaDescMatch[1] : \"\";\n\n// Headings (H1, H2)\nconst h1Matches = [...html.matchAll(/<h1[^>]*>(.*?)<\\/h1>/gi)].map(m => m[1].replace(/<[^>]+>/g, '').trim());\nconst h2Matches = [...html.matchAll(/<h2[^>]*>(.*?)<\\/h2>/gi)].map(m => m[1].replace(/<[^>]+>/g, '').trim());\n\n// -------- MAIN TEXT CLEANING --------\nlet cleanedText = cleanHTML(html);\n\n// 🔥 LIMIT SIZE (VERY IMPORTANT)\nconst MAX_LENGTH = 8000;\nif (cleanedText.length > MAX_LENGTH) {\n  cleanedText = cleanedText.substring(0, MAX_LENGTH);\n}\n\n// -------- RETURN STRUCTURED OUTPUT --------\nreturn [\n  {\n    json: {\n      title,\n      metaDescription,\n      headings: {\n        h1: h1Matches.slice(0, 5),\n        h2: h2Matches.slice(0, 10),\n      },\n      content: cleanedText\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4752,
+        144
+      ],
+      "id": "0feeaede-4a57-45fd-bf68-b40fe9b93544",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get raw HTML from previous node\nconst html = $input.first().json.data || \"\";\n\n// -------- CLEAN HTML --------\nfunction cleanHTML(html) {\n  return html\n    .replace(/<script[\\s\\S]*?<\\/script>/gi, '')\n    .replace(/<style[\\s\\S]*?<\\/style>/gi, '')\n    .replace(/<noscript[\\s\\S]*?<\\/noscript>/gi, '')\n    .replace(/<iframe[\\s\\S]*?<\\/iframe>/gi, '')\n    .replace(/<svg[\\s\\S]*?<\\/svg>/gi, '')\n    .replace(/<[^>]+>/g, ' ') // remove all tags\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\n// -------- EXTRACT SPECIFIC DATA --------\nfunction extractBetween(html, tag) {\n  const regex = new RegExp(`<${tag}[^>]*>(.*?)<\\\\/${tag}>`, \"i\");\n  const match = html.match(regex);\n  return match ? match[1].replace(/<[^>]+>/g, '').trim() : \"\";\n}\n\n// Title\nconst title = extractBetween(html, \"title\");\n\n// Meta description\nconst metaDescMatch = html.match(/<meta\\s+name=[\"']description[\"']\\s+content=[\"'](.*?)[\"']/i);\nconst metaDescription = metaDescMatch ? metaDescMatch[1] : \"\";\n\n// Headings (H1, H2)\nconst h1Matches = [...html.matchAll(/<h1[^>]*>(.*?)<\\/h1>/gi)].map(m => m[1].replace(/<[^>]+>/g, '').trim());\nconst h2Matches = [...html.matchAll(/<h2[^>]*>(.*?)<\\/h2>/gi)].map(m => m[1].replace(/<[^>]+>/g, '').trim());\n\n// -------- MAIN TEXT CLEANING --------\nlet cleanedText = cleanHTML(html);\n\n// 🔥 LIMIT SIZE (VERY IMPORTANT)\nconst MAX_LENGTH = 8000;\nif (cleanedText.length > MAX_LENGTH) {\n  cleanedText = cleanedText.substring(0, MAX_LENGTH);\n}\n\n// -------- RETURN STRUCTURED OUTPUT --------\nreturn [\n  {\n    json: {\n      title,\n      metaDescription,\n      headings: {\n        h1: h1Matches.slice(0, 5),\n        h2: h2Matches.slice(0, 10),\n      },\n      content: cleanedText\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6144,
+        96
+      ],
+      "id": "167fe4cb-0caf-4694-a1d8-50fa33d3f0de",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1824,
+        704
+      ],
+      "id": "ba610d0d-17b2-4f89-828d-b7415e0f0ea7",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GRDqounhRtPTcmsJ",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=The following e-commerce website was checked and is not working:\n{{ $('extracting_urls').item.json.output1 }}\n\nReplace this broken URL with a different real and working e-commerce website.\n\nRequirements:\n\nMarket Type: {{ $('On form submission').item.json['market type'] }}\n\nCountry: {{ $('On form submission').item.json.country }}\n\nThe replacement website must:\n\nsell products related to this market\nbe a real e-commerce store\nbe an active and reachable website\npreferably operate in the specified country\n\nThe replacement URL must NOT be any of these already discovered competitors:\n\n{{ $json.liens.first }}\n{{ $json.liens.second }}\n{{ $json.liens.third }}\n{{ $json.liens.fourth }}\n\nReturn exactly one valid replacement URL.\n\nOutput only the homepage URL.",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are an e-commerce website validation and replacement assistant.  Your task is to replace invalid or unreachable e-commerce website URLs with real, working alternatives.  The replacement website must be a real, active e-commerce store that sells products related to the specified market type and preferably operates in the specified country.  CRITICAL RULES:  The website MUST be a real and existing e-commerce store. The website MUST sell products directly online. The website MUST currently be active and accessible. The website MUST sell products related to the specified market type. Prefer websites that operate in the specified country. If not enough local competitors exist, include trusted international e-commerce stores that ship to the country. NEVER invent or guess domain names. NEVER generate domains from keywords. Only include websites you recognize as real companies or established online stores.  DOMAIN RULES:  Return only the official homepage domain. Do not include subpages. Do not include product pages. Do not include category pages. Do not include blogs or informational websites.  INVALID URL RULE:  You are given a URL that has been detected as unreachable or non-working. You MUST replace it with a different valid competitor.  Do NOT return the same URL again.  DEDUPLICATION RULE:  The replacement URL MUST NOT be any of the following previously discovered URLs: {{ $('extracting_urls').item.json.output1 }} , {{ $('extracting_urls').item.json.output2 }} ,{{ $('extracting_urls').item.json.output3 }} ,{{ $('extracting_urls').item.json.output4 }}\nIf a candidate domain appears in this list, discard it and find another competitor.  RELIABILITY REQUIREMENT:  Only return a domain if you are confident that:  it exists it has an active e-commerce store it sells products related to the specified market type  If you are unsure a website exists or works, do NOT include it.  OUTPUT FORMAT:  Return exactly ONE URL.  Output only the homepage domain.  Do not include explanations. Do not include numbering. Do not include extra text.  Example output format:  https://www.example.com"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1824,
+        544
+      ],
+      "id": "b7fd0ccf-6730-4672-a703-92c9bffbf3fc",
+      "name": "Basic LLM Chain",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1680,
+        304
+      ],
+      "id": "b0d8c44a-4b4d-4238-a415-914ef3dc7491",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        3728,
+        752
+      ],
+      "id": "2a7a3ce7-22f8-4918-adc1-235b6596a9b8",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GRDqounhRtPTcmsJ",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=The following e-commerce website was checked and is not working:\n{{ $('extracting_urls').item.json.output2 }}\nReplace this broken URL with a different real and working e-commerce website.\n\nRequirements:\n\nMarket Type: {{ $('On form submission').item.json['market type'] }}\n\nCountry: {{ $('On form submission').item.json.country }}\n\nThe replacement website must:\n\nsell products related to this market\nbe a real e-commerce store\nbe an active and reachable website\npreferably operate in the specified country\n\nThe replacement URL must NOT be any of these already discovered competitors:\n\n{{ $json.liens.first }}\n{{ $json.liens.second }}\n{{ $json.liens.third }}\n{{ $json.liens.fourth }}\n\nReturn exactly one valid replacement URL.\n\nOutput only the homepage URL.",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are an e-commerce website validation and replacement assistant.  Your task is to replace invalid or unreachable e-commerce website URLs with real, working alternatives.  The replacement website must be a real, active e-commerce store that sells products related to the specified market type and preferably operates in the specified country.  CRITICAL RULES:  The website MUST be a real and existing e-commerce store. The website MUST sell products directly online. The website MUST currently be active and accessible. The website MUST sell products related to the specified market type. Prefer websites that operate in the specified country. If not enough local competitors exist, include trusted international e-commerce stores that ship to the country. NEVER invent or guess domain names. NEVER generate domains from keywords. Only include websites you recognize as real companies or established online stores.  DOMAIN RULES:  Return only the official homepage domain. Do not include subpages. Do not include product pages. Do not include category pages. Do not include blogs or informational websites.  INVALID URL RULE:  You are given a URL that has been detected as unreachable or non-working. You MUST replace it with a different valid competitor.  Do NOT return the same URL again.  DEDUPLICATION RULE:  The replacement URL MUST NOT be any of the following previously discovered URLs: {{ $('extracting_urls').item.json.output1 }} , {{ $('extracting_urls').item.json.output2 }} ,{{ $('extracting_urls').item.json.output3 }} ,{{ $('extracting_urls').item.json.output4 }}\nIf a candidate domain appears in this list, discard it and find another competitor.  RELIABILITY REQUIREMENT:  Only return a domain if you are confident that:  it exists it has an active e-commerce store it sells products related to the specified market type  If you are unsure a website exists or works, do NOT include it.  OUTPUT FORMAT:  Return exactly ONE URL.  Output only the homepage domain.  Do not include explanations. Do not include numbering. Do not include extra text.  Example output format:  https://www.example.com"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        3776,
+        624
+      ],
+      "id": "5b6347ba-2fe2-435a-9fff-cef14740f65e",
+      "name": "Basic LLM Chain1",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        3744,
+        336
+      ],
+      "id": "3a9a3896-6cce-46f0-88fd-0192e938891f",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        5008,
+        720
+      ],
+      "id": "ebbd6aab-20be-44ef-9567-528c6eafad3d",
+      "name": "Google Gemini Chat Model3",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GRDqounhRtPTcmsJ",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=The following e-commerce website was checked and is not working:\n{{ $('extracting_urls').item.json.output3 }}\nReplace this broken URL with a different real and working e-commerce website.\n\nRequirements:\n\nMarket Type: {{ $('On form submission').item.json['market type'] }}\n\nCountry: {{ $('On form submission').item.json.country }}\n\nThe replacement website must:\n\nsell products related to this market\nbe a real e-commerce store\nbe an active and reachable website\npreferably operate in the specified country\n\nThe replacement URL must NOT be any of these already discovered competitors:\n\n{{ $json.liens.first }}\n{{ $json.liens.second }}\n{{ $json.liens.third }}\n{{ $json.liens.fourth }}\n\nReturn exactly one valid replacement URL.\n\nOutput only the homepage URL.",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are an e-commerce website validation and replacement assistant.  Your task is to replace invalid or unreachable e-commerce website URLs with real, working alternatives.  The replacement website must be a real, active e-commerce store that sells products related to the specified market type and preferably operates in the specified country.  CRITICAL RULES:  The website MUST be a real and existing e-commerce store. The website MUST sell products directly online. The website MUST currently be active and accessible. The website MUST sell products related to the specified market type. Prefer websites that operate in the specified country. If not enough local competitors exist, include trusted international e-commerce stores that ship to the country. NEVER invent or guess domain names. NEVER generate domains from keywords. Only include websites you recognize as real companies or established online stores.  DOMAIN RULES:  Return only the official homepage domain. Do not include subpages. Do not include product pages. Do not include category pages. Do not include blogs or informational websites.  INVALID URL RULE:  You are given a URL that has been detected as unreachable or non-working. You MUST replace it with a different valid competitor.  Do NOT return the same URL again.  DEDUPLICATION RULE:  The replacement URL MUST NOT be any of the following previously discovered URLs: {{ $('extracting_urls').item.json.output1 }} , {{ $('extracting_urls').item.json.output2 }} ,{{ $('extracting_urls').item.json.output3 }} ,{{ $('extracting_urls').item.json.output4 }}\nIf a candidate domain appears in this list, discard it and find another competitor.  RELIABILITY REQUIREMENT:  Only return a domain if you are confident that:  it exists it has an active e-commerce store it sells products related to the specified market type  If you are unsure a website exists or works, do NOT include it.  OUTPUT FORMAT:  Return exactly ONE URL.  Output only the homepage domain.  Do not include explanations. Do not include numbering. Do not include extra text.  Example output format:  https://www.example.com"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        5040,
+        512
+      ],
+      "id": "9b2ee509-adc1-4aa2-8365-d58e017ce76f",
+      "name": "Basic LLM Chain2",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        6032,
+        912
+      ],
+      "id": "2ae33f55-5a6b-4551-b8d2-62f7939cc4f1",
+      "name": "Google Gemini Chat Model4",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GRDqounhRtPTcmsJ",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=The following e-commerce website was checked and is not working:\n{{ $('extracting_urls').item.json.output1 }}\n\nReplace this broken URL with a different real and working e-commerce website.\n\nRequirements:\n\nMarket Type: {{ $('On form submission').item.json['market type'] }}\n\nCountry: {{ $('On form submission').item.json.country }}\n\nThe replacement website must:\n\nsell products related to this market\nbe a real e-commerce store\nbe an active and reachable website\npreferably operate in the specified country\n\nThe replacement URL must NOT be any of these already discovered competitors:\n\n{{ $json.liens.first }}\n{{ $json.liens.second }}\n{{ $json.liens.third }}\n{{ $json.liens.fourth }}\n\nReturn exactly one valid replacement URL.\n\nOutput only the homepage URL.",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are an e-commerce website validation and replacement assistant.  Your task is to replace invalid or unreachable e-commerce website URLs with real, working alternatives.  The replacement website must be a real, active e-commerce store that sells products related to the specified market type and preferably operates in the specified country.  CRITICAL RULES:  The website MUST be a real and existing e-commerce store. The website MUST sell products directly online. The website MUST currently be active and accessible. The website MUST sell products related to the specified market type. Prefer websites that operate in the specified country. If not enough local competitors exist, include trusted international e-commerce stores that ship to the country. NEVER invent or guess domain names. NEVER generate domains from keywords. Only include websites you recognize as real companies or established online stores.  DOMAIN RULES:  Return only the official homepage domain. Do not include subpages. Do not include product pages. Do not include category pages. Do not include blogs or informational websites.  INVALID URL RULE:  You are given a URL that has been detected as unreachable or non-working. You MUST replace it with a different valid competitor.  Do NOT return the same URL again.  DEDUPLICATION RULE:  The replacement URL MUST NOT be any of the following previously discovered URLs: {{ $('extracting_urls').item.json.output1 }} , {{ $('extracting_urls').item.json.output2 }} ,{{ $('extracting_urls').item.json.output3 }} ,{{ $('extracting_urls').item.json.output4 }}\nIf a candidate domain appears in this list, discard it and find another competitor.  RELIABILITY REQUIREMENT:  Only return a domain if you are confident that:  it exists it has an active e-commerce store it sells products related to the specified market type  If you are unsure a website exists or works, do NOT include it.  OUTPUT FORMAT:  Return exactly ONE URL.  Output only the homepage domain.  Do not include explanations. Do not include numbering. Do not include extra text.  Example output format:  https://www.example.com"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        6128,
+        736
+      ],
+      "id": "0f7a1920-3afb-487e-89f4-bc851c67dd67",
+      "name": "Basic LLM Chain3",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        6224,
+        448
+      ],
+      "id": "c1b2e616-3e36-4b53-8729-e41e5664cb7a",
+      "name": "Loop Over Items3"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        5040,
+        304
+      ],
+      "id": "f2dbc175-a5dc-4b5e-9986-598253d53668",
+      "name": "Loop Over Items2"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Basic LLM Chain2').item.json.text }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": " Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "Accept",
+              "value": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "en-US,en;q=0.9,fr;q=0.8"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "gzip, deflate, br"
+            },
+            {
+              "name": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "name": "Upgrade-Insecure-Requests",
+              "value": "1"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "name": "Pragma",
+              "value": "no-cache"
+            },
+            {
+              "name": "Upgrade-Insecure-Requests",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        5632,
+        320
+      ],
+      "id": "1fa95afd-ceae-48c7-8276-5b442d182c79",
+      "name": "link",
+      "retryOnFail": false,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Basic LLM Chain1').item.json.text }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": " Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "Accept",
+              "value": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "en-US,en;q=0.9,fr;q=0.8"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "gzip, deflate, br"
+            },
+            {
+              "name": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "name": "Upgrade-Insecure-Requests",
+              "value": "1"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "name": "Pragma",
+              "value": "no-cache"
+            },
+            {
+              "name": "Upgrade-Insecure-Requests",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        4320,
+        320
+      ],
+      "id": "6f86a4d7-93a1-4c01-ac61-73aafeb0876a",
+      "name": "link5",
+      "retryOnFail": false,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Basic LLM Chain').item.json.text }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": " Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "Accept",
+              "value": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "en-US,en;q=0.9,fr;q=0.8"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "gzip, deflate, br"
+            },
+            {
+              "name": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "name": "Upgrade-Insecure-Requests",
+              "value": "1"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "name": "Pragma",
+              "value": "no-cache"
+            },
+            {
+              "name": "Upgrade-Insecure-Requests",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2288,
+        272
+      ],
+      "id": "41e719f4-89fc-4ab6-bfcd-08a407b40c7c",
+      "name": "link6",
+      "retryOnFail": false,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Basic LLM Chain3').item.json.text }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": " Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "Accept",
+              "value": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "en-US,en;q=0.9,fr;q=0.8"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "gzip, deflate, br"
+            },
+            {
+              "name": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "name": "Upgrade-Insecure-Requests",
+              "value": "1"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "name": "Pragma",
+              "value": "no-cache"
+            },
+            {
+              "name": "Upgrade-Insecure-Requests",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        6912,
+        416
+      ],
+      "id": "edbe797f-a851-4572-8c76-f2df4cdb29b8",
+      "name": "link7",
+      "retryOnFail": false,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -448,
+        -176
+      ],
+      "id": "24282fb8-3109-43a5-a155-da9a83bb3703",
+      "name": "Google Gemini Chat Model5",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GRDqounhRtPTcmsJ",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        5600,
+        784
+      ],
+      "id": "ace62743-75e0-4c60-bb13-44c4928f4fcc",
+      "name": "Wait7",
+      "webhookId": "78890be9-6c0e-4094-bed9-24569879e286"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2656,
+        576
+      ],
+      "id": "d36e4a13-65b6-4d9a-ac3e-b49079974cd2",
+      "name": "Wait8",
+      "webhookId": "78890be9-6c0e-4094-bed9-24569879e286"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        6992,
+        656
+      ],
+      "id": "8f96437f-7cc3-44b0-99e9-bb8037e4eb50",
+      "name": "Wait9",
+      "webhookId": "78890be9-6c0e-4094-bed9-24569879e286"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        6640,
+        448
+      ],
+      "id": "b9ed0a4b-7b1c-4680-8afc-6ecde880f07a",
+      "name": "Wait10",
+      "webhookId": "fa721a71-163f-4385-b498-b512d10720cd"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        5456,
+        304
+      ],
+      "id": "c8179e83-a2fe-40ad-bcf5-62668a918737",
+      "name": "Wait11",
+      "webhookId": "daa13783-68e8-4669-bd83-5fee26d468ae"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        4160,
+        320
+      ],
+      "id": "37c34de0-2a00-46a5-8313-41996f72dcbb",
+      "name": "Wait12",
+      "webhookId": "63d5ca67-f850-484c-a1ee-413407998b5b"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1888,
+        256
+      ],
+      "id": "5506c1c6-c14f-40b5-8292-65226888636c",
+      "name": "Wait13",
+      "webhookId": "9462d090-944c-49aa-b899-86a00c878999"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f18cd16e-c592-439a-b1a8-e4712572ca04",
+              "leftValue": "={{ $json.error.stack }}",
+              "rightValue": "=getaddrinfo ENOTFOUND domain.com",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "76bb7792-b68f-4cfb-9cc2-02e0ae9f479d",
+              "leftValue": "={{ $json.error.stack }}",
+              "rightValue": "ENODATA",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4352,
+        416
+      ],
+      "id": "66807bd5-26e3-4f9d-81e1-4479ef735b24",
+      "name": "If4"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f18cd16e-c592-439a-b1a8-e4712572ca04",
+              "leftValue": "={{ $json.error.stack }}",
+              "rightValue": "=getaddrinfo ENOTFOUND domain.com",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "76bb7792-b68f-4cfb-9cc2-02e0ae9f479d",
+              "leftValue": "={{ $json.error.stack }}",
+              "rightValue": "ENODATA",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2720,
+        304
+      ],
+      "id": "5e2bf7db-f27a-4bf8-b218-31c7692fdaac",
+      "name": "If6"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f18cd16e-c592-439a-b1a8-e4712572ca04",
+              "leftValue": "={{ $json.error.stack }}",
+              "rightValue": "=getaddrinfo ENOTFOUND domain.com",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "76bb7792-b68f-4cfb-9cc2-02e0ae9f479d",
+              "leftValue": "={{ $json.error.stack }}",
+              "rightValue": "ENODATA",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        5712,
+        496
+      ],
+      "id": "9cf96820-1e20-4364-b7e5-01261e56e6b8",
+      "name": "If7"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f18cd16e-c592-439a-b1a8-e4712572ca04",
+              "leftValue": "={{ $json.error.stack }}",
+              "rightValue": "=getaddrinfo ENOTFOUND domain.com",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "76bb7792-b68f-4cfb-9cc2-02e0ae9f479d",
+              "leftValue": "={{ $json.error.stack }}",
+              "rightValue": "ENODATA",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        7152,
+        480
+      ],
+      "id": "891975c8-ea49-4543-a3da-444a8ab112a2",
+      "name": "If8"
+    },
+    {
+      "parameters": {
+        "amount": 6
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        4336,
+        720
+      ],
+      "id": "c2fb7cf5-88ef-40ac-8345-1f649cdb20e8",
+      "name": "Wait14",
+      "webhookId": "e0166ed5-e1e2-419c-9876-f6473fd4d41a"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1712,
+        -160
+      ],
+      "id": "4b5d927d-b19b-43aa-b1fa-6cfd8282e56c",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "4AeXjE10gb60YVZw",
+          "name": "OpenRouter account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const modelOutput = $input.first().json.output;\nconst text = $input.first().json.output || $input.first().json.text || \"\";\nconst cleaned = text.replace(/\\r\\n/g, \"\\n\");\n\n// extract main title\nconst regexTitle =  /\\*\\*(Individual Analysis)\\*\\*/;\n\nconst regex1 = /\\*\\*\\(1\\)\\s*(.*?)\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\(2\\)|\\*\\*\\(3\\)|\\*\\*\\(4\\)|$)/;\nconst regex2 = /\\*\\*\\(2\\)\\s*(.*?)\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\(3\\)|\\*\\*\\(4\\)|$)/;\nconst regex3 = /\\*\\*\\(3\\)\\s*(.*?)\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\(4\\)|$)/;\nconst regex4 = /\\*\\*\\(4\\)\\s*(.*?)\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\s*\\[|\\*\\*\\s*\\(|$)/;\n\n// GLOBAL ANALYSIS\nconst regex5  = /\\*\\*\\[\\s*1\\s*\\.\\s*Market Positioning\\s*\\]\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\[2|$)/i;\nconst regex6  = /\\*\\*\\[\\s*2\\s*\\.\\s*Product Portfolio\\s*\\]\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\[3|$)/i;\nconst regex7  = /\\*\\*\\[\\s*3\\s*\\.\\s*Pricing Positioning\\s*\\]\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\[4|$)/i;\nconst regex8  = /\\*\\*\\[\\s*4\\s*\\.\\s*Target Market\\s*\\]\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\[5|$)/i;\nconst regex9  = /\\*\\*\\[\\s*5\\s*\\.\\s*Competitive Strengths\\s*\\]\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\[6|$)/i;\nconst regex10 = /\\*\\*\\[\\s*6\\s*\\.\\s*Potential Weaknesses\\s*\\]\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\[7|$)/i;\nconst regex11 = /\\*\\*\\[\\s*7\\s*\\.\\s*Strategic Insights\\s*\\]\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\[8|$)/i;\nconst regex12 = /\\*\\*\\[\\s*8\\s*\\.\\s*Executive Summary\\s*\\]\\*\\*\\s*([\\s\\S]*?)$/i;\nconst regexTitle2 = /\\*\\*(Global Competitive Analysis)\\*\\*/;\n\nconst matchTitle = cleaned.match(regexTitle);\nconst matchTitle2 = cleaned.match(regexTitle2);\nconst match1 = cleaned.match(regex1);\nconst match2 = cleaned.match(regex2);\nconst match3 = cleaned.match(regex3);\nconst match4 = cleaned.match(regex4);\n\nconst match5 = cleaned.match(regex5);\nconst match6 = cleaned.match(regex6);\nconst match7 = cleaned.match(regex7);\nconst match8 = cleaned.match(regex8);\nconst match9 = cleaned.match(regex9);\nconst match10 = cleaned.match(regex10);\nconst match11 = cleaned.match(regex11);\nconst match12 = cleaned.match(regex12);\n\nlet mainTitle = \"\";\nlet section1 = \"\";\nlet section2 = \"\";\nlet section3 = \"\";\nlet section4 = \"\";\nlet SecondTitle= \"\";\nlet Market_Positioning = \"\";\nlet Product_Portfolio = \"\";\nlet Pricing_Positioning = \"\";\nlet Target_Market = \"\";\nlet Competitive_Strengths = \"\";\nlet Potential_Weaknesses = \"\";\nlet Strategic_Insights = \"\";\nlet Executive_Summary = \"\";\n\nif (matchTitle && matchTitle[1]) mainTitle = matchTitle[1].trim();\nif (matchTitle2 && matchTitle2[1]) {\n  SecondTitle = matchTitle2[1].trim();\n}\nif (match1) section1 = match1[1].trim() + \"\\n\\n\" + match1[2].trim();\nif (match2) section2 = match2[1].trim() + \"\\n\\n\" + match2[2].trim();\nif (match3) section3 = match3[1].trim() + \"\\n\\n\" + match3[2].trim();\nif (match4) section4 = match4[1].trim() + \"\\n\\n\" + match4[2].trim();\n\nif (match5) Market_Positioning = match5[1].trim();\nif (match6) Product_Portfolio = match6[1].trim();\nif (match7) Pricing_Positioning = match7[1].trim();\nif (match8) Target_Market = match8[1].trim();\nif (match9) Competitive_Strengths = match9[1].trim();\nif (match10) Potential_Weaknesses = match10[1].trim();\nif (match11) Strategic_Insights = match11[1].trim();\nif (match12) Executive_Summary = match12[1].trim();\n\nreturn [\n{\njson: {\noutput: modelOutput,\nTitle: mainTitle,\nSection1: section1,\nSection2: section2,\nSection3: section3,\nSection4: section4,\nSecondTitle : SecondTitle,\nMarket_Positioning,\nProduct_Portfolio,\nPricing_Positioning,\nTarget_Market,\nCompetitive_Strengths,\nPotential_Weaknesses,\nStrategic_Insights,\nExecutive_Summary\n}\n}\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2320,
+        0
+      ],
+      "id": "ab4cd1bd-d174-4714-9229-fa17a1694aee",
+      "name": "Code in JavaScript5"
+    },
+    {
+      "parameters": {
+        "jsCode": "const market_type = $('On form submission').first().json['market type'];\nconst Analyse_Repport = \"Competition Report of: \";\nconst country = $('On form submission').first().json.country;\nconst ont = \" of country: \";\nconst out = 0;\nconst next = Number(out) + 1;\n\nreturn [\n  {\n    json: {\n      doc_title: `${Analyse_Repport}${market_type}${ont}${country} ${next}`,\n      big : `${Analyse_Repport}${market_type}`\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2736,
+        0
+      ],
+      "id": "595f94b0-a9ab-4eaa-a67f-62fcaced9eff",
+      "name": "Code in JavaScript7"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the following structured company data and generate a professional competitive analysis report.\n\nThe report will be stored in Google Docs and used for market research.\n\nOnly analyze the provided information.\n\nCompany Data:\n{{ $json.output }}\n\nGenerate the report using the required structure.",
+        "options": {
+          "systemMessage": "You are a **Senior Market Intelligence Analyst specialized in e-commerce competitor analysis**.\n\nYour task is to convert structured **JSON company data** into a **professional competitive analysis report suitable for Google Docs**.\n\n--------------------------------------------------\n\nCORE RULES\n\n• Only analyze the provided JSON data.\n• Do not invent, infer, or assume missing information.\n• If a field is missing, explicitly state: \"Information not available.\"\n• Use a formal consulting tone similar to strategy consulting reports.\n• Keep the report clear, structured, and concise.\n• Strictly avoid tables.\n• Strictly avoid comparison grids.\n• Strictly avoid bullet comparisons.\n• Do NOT include separators such as --- anywhere in the report.\n• Do NOT include word count statements such as \"(Word count: ...)\".\n• The report must be written only with headings and paragraphs.\n\n--------------------------------------------------\n\nTITLE FORMATTING RULES\n\nAll section titles MUST be bold and follow this exact formatting style:\n\n**Title Name**\n\nDo NOT add extra symbols, separators, or punctuation.\n\n--------------------------------------------------\n\nINDIVIDUAL STORE ANALYSIS FORMAT\n\nStart with the section title:\n\n**Individual Analysis**\n\nThen analyze each company/store separately.\n\nEach store title MUST follow this exact format:\n\n**(1) Store Name – Individual Analysis**\n**(2) Store Name – Individual Analysis**\n**(3) Store Name – Individual Analysis**\n**(4) Store Name – Individual Analysis**\n\nRules for this section:\n\n• Each store must be analyzed independently.\n• Do NOT compare companies in this section.\n• Write one concise paragraph per store covering:\n  - Company Overview\n  - Market Positioning\n  - Product Portfolio\n  - Pricing Positioning\n  - Target Market\n\n--------------------------------------------------\n\nGLOBAL COMPETITIVE ANALYSIS\n\nAfter completing all individual store analyses, continue with the global market analysis using these EXACT section titles:\n\n[1.Market Positioning]\n\n[2.Product Portfolio]\n\n[3.Pricing Positioning]\n\n[4.Target Market]\n\n[5.Competitive Strengths]\n\n[6.Potential Weaknesses]\n\n[7.Strategic Insights]\n\n[8.Executive Summary]\n\nRules for these sections:\n\n• Analyze insights across all companies collectively.\n• Maintain paragraph-based analysis.\n• Do NOT use tables.\n• Do NOT use comparison grids.\n• Do NOT repeat the individual analysis format.\n\n--------------------------------------------------\n\nOUTPUT CONSTRAINTS\n\n• Total length must be between 500 and 700 words.\n• Use professional paragraph analysis.\n• Use bold titles exactly as specified.\n• Ensure formatting is clean and suitable for direct insertion into Google Docs."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1696,
+        -32
+      ],
+      "id": "c878d3ff-8c42-4467-b526-ad6298c4cf28",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "competition_repport",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_c_p": 0,
+            "year_c_p": 0,
+            "repport": "={{ $('AI Agent').item.json.output }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_c_p",
+              "displayName": "id_c_p",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_c_p",
+              "displayName": "year_c_p",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "links",
+              "displayName": "links",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "repport",
+              "displayName": "repport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "verif",
+              "displayName": "verif",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        336,
+        1296
+      ],
+      "id": "bb26cb1c-84e9-42ce-a566-a4bf6e5f53d4",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "52dd62e0-8949-4b14-bde3-c6e6e665ac5e",
+              "name": "new_url",
+              "value": "={{ $('Basic LLM Chain').item.json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2096,
+        256
+      ],
+      "id": "52c5abbf-d64f-4ddf-a06b-018957382e42",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "421e7c78-aa07-40ab-886c-871d3ee8a46f",
+              "name": "url_new_1",
+              "value": "={{ $('Basic LLM Chain1').item.json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3952,
+        336
+      ],
+      "id": "f7fda27f-0ee1-4cab-afd0-66a3440b527c",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "54a9d3f0-50c9-40d7-bfc1-fb5e2506e66b",
+              "name": "url_new_2",
+              "value": "={{ $('Basic LLM Chain2').item.json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        5248,
+        304
+      ],
+      "id": "412f0052-c6be-40d0-a8f8-eba0b53e0cb7",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5e8065f5-08de-4685-b389-b11ba24ba454",
+              "name": "url_new_3",
+              "value": "={{ $('Basic LLM Chain3').item.json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        6432,
+        448
+      ],
+      "id": "504bc6d1-42eb-429e-bea4-1670fe23c3f1",
+      "name": "Edit Fields4"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "competition_repport",
+          "mode": "list",
+          "cachedResultName": "competition_repport"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "verif": false,
+            "id_c_p": 0,
+            "year_c_p": 0,
+            "links": "={{ $('Edit Fields').item.json.url1 }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_c_p",
+              "displayName": "id_c_p",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_c_p",
+              "displayName": "year_c_p",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "links",
+              "displayName": "links",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "repport",
+              "displayName": "repport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "verif",
+              "displayName": "verif",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        384,
+        -400
+      ],
+      "id": "99f4e87c-bf16-4430-97c3-3c706068c2cb",
+      "name": "Insert rows in a table1",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "competition_repport",
+          "mode": "list",
+          "cachedResultName": "competition_repport"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "verif": false,
+            "id_c_p": 0,
+            "year_c_p": 0,
+            "links": "={{ $('Edit Fields').item.json.url2 }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_c_p",
+              "displayName": "id_c_p",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_c_p",
+              "displayName": "year_c_p",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "links",
+              "displayName": "links",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "repport",
+              "displayName": "repport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "verif",
+              "displayName": "verif",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        768,
+        -368
+      ],
+      "id": "dedfc6c4-aed4-4027-80c4-e80b2b5e695c",
+      "name": "Insert rows in a table2",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "competition_repport",
+          "mode": "list",
+          "cachedResultName": "competition_repport"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "verif": false,
+            "id_c_p": 0,
+            "year_c_p": 0,
+            "links": "={{ $('Edit Fields').item.json.url3 }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_c_p",
+              "displayName": "id_c_p",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_c_p",
+              "displayName": "year_c_p",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "links",
+              "displayName": "links",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "repport",
+              "displayName": "repport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "verif",
+              "displayName": "verif",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        432,
+        -144
+      ],
+      "id": "6bbc83f4-d632-4ba2-9e38-a06cb28907e1",
+      "name": "Insert rows in a table3",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "competition_repport",
+          "mode": "list",
+          "cachedResultName": "competition_repport"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "verif": false,
+            "id_c_p": 0,
+            "year_c_p": 0,
+            "links": "={{ $('Edit Fields').item.json.url4 }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_c_p",
+              "displayName": "id_c_p",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_c_p",
+              "displayName": "year_c_p",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "links",
+              "displayName": "links",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "repport",
+              "displayName": "repport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "verif",
+              "displayName": "verif",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        448,
+        64
+      ],
+      "id": "09091548-84e8-48ad-b93e-0004d34cfe2a",
+      "name": "Insert rows in a table4",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE competition_repport\nSET verif = 'True'\nWHERE links = {{ $json.links }};\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1376,
+        192
+      ],
+      "id": "f4015b84-d92f-49ec-acf8-9dc801232ac0",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE competition_repport\nSET links = '{{ $('Edit Fields1').item.json.new_url }}',\n    verif = TRUE\nWHERE links = '{{ $('Edit Fields').item.json.url1 }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2496,
+        240
+      ],
+      "id": "b5099ebc-6141-479b-b596-66be97092f7d",
+      "name": "Execute a SQL query1",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE competition_repport\nSET verif = TRUE\nWHERE links ='{{ $('Edit Fields').item.json.url2 }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3568,
+        176
+      ],
+      "id": "a6e766dd-93fe-417e-bef7-86f50377e838",
+      "name": "Execute a SQL query2",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nUPDATE competition_repport\nSET links = '{{ $('Edit Fields2').item.json.new_url }}',\n    verif = TRUE\nWHERE links = '{{ $('Edit Fields').item.json.url2 }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        4064,
+        448
+      ],
+      "id": "405ae562-7ffa-4c40-9339-c734956a6452",
+      "name": "Execute a SQL query3",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE competition_repport\nSET verif = True\nWHERE links ='{{ $('Edit Fields').item.json.url3 }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        4608,
+        -64
+      ],
+      "id": "3a5a2f6d-c40d-4d9f-8eff-f34218317da3",
+      "name": "Execute a SQL query4",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nUPDATE competition_repport\nSET links = '{{ $('Edit Fields3').item.json.new_url }}',\n    verif = TRUE\nWHERE links = '{{ $('Edit Fields').item.json.url3 }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        5456,
+        464
+      ],
+      "id": "282f3798-edef-41cd-98af-3b689fd9beb7",
+      "name": "Execute a SQL query5",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE competition_repport\nSET verif = True\nWHERE links ='{{ $('Edit Fields').item.json.url4 }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        5984,
+        -64
+      ],
+      "id": "5f3715f4-ded1-4c3f-90be-017f50222900",
+      "name": "Execute a SQL query6",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE competition_repport\nSET links = '{{ $('Edit Fields4').item.json.new_url }}',\n    verif = TRUE\nWHERE links = '{{ $('Edit Fields').item.json.url4 }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        6608,
+        176
+      ],
+      "id": "9eea403c-dc2a-466b-974b-cf3644816fe1",
+      "name": "Execute a SQL query7",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Find competitor e-commerce websites.\n\nMarket Type: {{ $('On form submission').item.json['market type'] }}\nCountry: {{ $('On form submission').item.json.country }}\n\nReturn exactly 4 real e-commerce websites that sell products in this market.\nOnly include websites that currently exist and are accessible.",
+        "options": {
+          "systemMessage": "=You are an e-commerce competitor discovery assistant.\n\nYour job is to return real, existing e-commerce websites that sell products related to the given market type in the specified country.\n\n🔴 CRITICAL RULES:\nOnly return websites that are real and well-known businesses.\nOnly return companies that operate a real online store.\nNEVER invent domain names.\nNEVER construct domains from keywords.\nOnly include brands or stores you recognize as real companies.\n🎯 MARKET RELEVANCE RULE:\n\nThe returned websites MUST sell products that clearly match the Market Type specified in the user message.\n\nBefore including a website, verify internally that:\n\nThe store sells products that belong to the specified market type.\nThe store's main catalog is relevant to that market.\nThe store is a legitimate competitor in that market.\n\nExamples:\n\nIf the market type is fitness equipment, valid competitors are stores selling gym gear, workout equipment, or training accessories.\nIf the market type is cosmetics, valid competitors are beauty brands or retailers selling makeup or skincare.\n\n🚫 If a website does NOT primarily sell products related to the specified market type, DO NOT include it.\n\n🌐 DOMAIN RULES:\nReturn ONLY the official homepage domain.\nDo NOT include product pages.\nDo NOT include category pages.\nDo NOT include subpages.\n\nVALID:\nhttps://www.nike.com\n\nINVALID:\nhttps://www.nike.com/shoes\n\nhttps://nike-shop-online.com\n\n🧠 WEBSITE QUALITY FILTER:\n\nBefore including a website, verify internally that:\n\nIt is a known brand or retailer\nIt actively sells products online\nIt has a functioning e-commerce store\n\n🚫 If you are not confident the store exists, DO NOT include it.\n\n⚠️ RELIABILITY RULE:\n\nIf you are unsure a website exists or works, discard it and find another competitor.\n\n📤 STRICT OUTPUT FORMAT:\nReturn exactly 4 URLs\nOutput ONLY homepage URLs\nOne URL per line\nNo explanations\nNo numbering\nNo extra text"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -432,
+        -400
+      ],
+      "id": "c0a87006-b158-4809-927d-b1acf5b96606",
+      "name": "AI Agent2"
+    },
+    {
+      "parameters": {
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "WebSite URL"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        -2288,
+        800
+      ],
+      "id": "218bdc72-6769-4b59-a7a6-2452bde97b9d",
+      "name": "Form",
+      "webhookId": "fdde202d-6d52-4c19-a3b2-f84f7c409a27"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json['WebSite URL'] }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": " Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "Accept",
+              "value": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "en-US,en;q=0.9,fr;q=0.8"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "gzip, deflate, br"
+            },
+            {
+              "name": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "name": "Upgrade-Insecure-Requests",
+              "value": "1"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "name": "Pragma",
+              "value": "no-cache"
+            },
+            {
+              "name": "Upgrade-Insecure-Requests",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1872,
+        784
+      ],
+      "id": "c8f87064-12b5-4081-83d5-e701cfbc8c22",
+      "name": "link8",
+      "retryOnFail": false,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f18cd16e-c592-439a-b1a8-e4712572ca04",
+              "leftValue": "={{ $json.error.stack }}",
+              "rightValue": "=getaddrinfo ENOTFOUND domain.com",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "76bb7792-b68f-4cfb-9cc2-02e0ae9f479d",
+              "leftValue": "={{ $json.error.stack }}",
+              "rightValue": "ENODATA",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "76856e35-244c-4e0e-b4c9-bb4f1be55350",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "Invalid URL: bb.com. URL must start with \"http\" or \"https\".",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1472,
+        848
+      ],
+      "id": "2191e42b-96ba-4326-8420-239e775f598a",
+      "name": "If9"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -1680,
+        1200
+      ],
+      "id": "b8a75144-31a2-4f5b-90ab-c4638c2ea734",
+      "name": "Wait15",
+      "webhookId": "e7c2ecec-9471-4474-a85f-913a7f85721e"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json['Do you want a repport for specefic Website ?'] }}",
+                    "rightValue": "No",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "f358844a-15df-4cf9-a299-7a7b4fe2febd"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "0e9183cf-8d7f-4091-8ceb-7393dd6d41d4",
+                    "leftValue": "={{ $json['Do you want a repport for specefic Website ?'] }}",
+                    "rightValue": "Yes",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -1328,
+        -416
+      ],
+      "id": "965d5a3f-f447-4eb8-bcf1-eccfaa5f0cc1",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE competition_repport\nSET verif = 'True'\nWHERE links = {{ $json.links }};\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1504,
+        688
+      ],
+      "id": "cbe380a3-8114-416e-b91e-674cdbc613d8",
+      "name": "Execute a SQL query8",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "competition_repport",
+          "mode": "list",
+          "cachedResultName": "competition_repport"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "verif": false,
+            "id_c_p": 0,
+            "year_c_p": 0,
+            "links": "={{ $json['WebSite URL'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_c_p",
+              "displayName": "id_c_p",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_c_p",
+              "displayName": "year_c_p",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "links",
+              "displayName": "links",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "repport",
+              "displayName": "repport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "verif",
+              "displayName": "verif",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2112,
+        784
+      ],
+      "id": "5f222964-5181-4f09-bb45-44d28940b7d6",
+      "name": "Insert rows in a table5",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get raw HTML from previous node\nconst html = $input.first().json.data || \"\";\n\n// -------- CLEAN HTML --------\nfunction cleanHTML(html) {\n  return html\n    .replace(/<script[\\s\\S]*?<\\/script>/gi, '')\n    .replace(/<style[\\s\\S]*?<\\/style>/gi, '')\n    .replace(/<noscript[\\s\\S]*?<\\/noscript>/gi, '')\n    .replace(/<iframe[\\s\\S]*?<\\/iframe>/gi, '')\n    .replace(/<svg[\\s\\S]*?<\\/svg>/gi, '')\n    .replace(/<[^>]+>/g, ' ') // remove all tags\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\n// -------- EXTRACT SPECIFIC DATA --------\nfunction extractBetween(html, tag) {\n  const regex = new RegExp(`<${tag}[^>]*>(.*?)<\\\\/${tag}>`, \"i\");\n  const match = html.match(regex);\n  return match ? match[1].replace(/<[^>]+>/g, '').trim() : \"\";\n}\n\n// Title\nconst title = extractBetween(html, \"title\");\n\n// Meta description\nconst metaDescMatch = html.match(/<meta\\s+name=[\"']description[\"']\\s+content=[\"'](.*?)[\"']/i);\nconst metaDescription = metaDescMatch ? metaDescMatch[1] : \"\";\n\n// Headings (H1, H2)\nconst h1Matches = [...html.matchAll(/<h1[^>]*>(.*?)<\\/h1>/gi)].map(m => m[1].replace(/<[^>]+>/g, '').trim());\nconst h2Matches = [...html.matchAll(/<h2[^>]*>(.*?)<\\/h2>/gi)].map(m => m[1].replace(/<[^>]+>/g, '').trim());\n\n// -------- MAIN TEXT CLEANING --------\nlet cleanedText = cleanHTML(html);\n\n// 🔥 LIMIT SIZE (VERY IMPORTANT)\nconst MAX_LENGTH = 8000;\nif (cleanedText.length > MAX_LENGTH) {\n  cleanedText = cleanedText.substring(0, MAX_LENGTH);\n}\n\n// -------- RETURN STRUCTURED OUTPUT --------\nreturn [\n  {\n    json: {\n      title,\n      metaDescription,\n      headings: {\n        h1: h1Matches.slice(0, 5),\n        h2: h2Matches.slice(0, 10),\n      },\n      content: cleanedText\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1216,
+        688
+      ],
+      "id": "fd2be28e-6115-4dc7-800d-4d6d49474a9a",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "86d12915-1084-4626-be30-98947c99b03d",
+              "name": "content12",
+              "value": "={{ $json.title }}\n{{ $json.metaDescription }}\n{{ $json.headings.h1[0] }}\n{{ $json.headings.h2[0] }}\n{{ $json.headings.h2[1] }}\n{{ $json.headings.h2[2] }}\n{{ $json.headings.h2[3] }}\n{{ $json.headings.h2[4] }}\n{{ $json.headings.h2[5] }}\n{{ $json.headings.h2[6] }}\n{{ $json.headings.h2[7] }}\n{{ $json.headings.h2[8] }}\n{{ $json.headings.h2[9] }}\n{{ $json.content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -912,
+        688
+      ],
+      "id": "0490229c-9014-4bdf-8e19-6e2f29e0ab25",
+      "name": "content"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        1024
+      ],
+      "id": "37aa2d5c-4866-464f-946d-034c08fd2d54",
+      "name": "OpenRouter Chat Model2",
+      "credentials": {
+        "openRouterApi": {
+          "id": "MwfjNq7ruLpbyk1N",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the following webpage content that was scraped from competitor websites.\nExtract structured e-commerce intelligence data.\nURL:\n{{ $('Form').item.json['WebSite URL'] }}\nWebpage Content:\n{{ $('content').item.json.content12 }}\nInstructions:\n• Analyze only the provided content\n• Do not access external websites\n• Do not hallucinate\n• Return structured JSON only",
+        "options": {
+          "systemMessage": "You are an E-commerce Data Extraction Agent used inside an n8n workflow.\n\nThe workflow provides MULTIPLE cleaned webpage contents concatenated into a single input.\n\n--------------------------------\nINPUT STRUCTURE\n--------------------------------\n\nThe user message contains multiple entries.\n\nEach entry follows this structure:\n\nURL: <website_url>\nWebpage Content:\n<cleaned text content OR error message>\n\nEntries are separated logically in the text.\n\nExample:\n\nURL: https://example1.com\nWebpage Content:\nSome cleaned text...\n\nURL: https://example2.com\nWebpage Content:\nERROR: 403 Forbidden\n\n--------------------------------\nYOUR TASK\n--------------------------------\n\n1. Detect and split each URL + CONTENT pair\n2. Process EACH entry independently\n3. Return ONE structured result per URL\n\n--------------------------------\nPRIMARY DATA SOURCE\n--------------------------------\n\nUse ONLY the provided CONTENT for each URL.\n\nThe content is already:\n- cleaned\n- reduced\n- may be truncated\n\nDo NOT expect full HTML.\n\n--------------------------------\nERROR HANDLING (VERY IMPORTANT)\n--------------------------------\n\nIf CONTENT contains:\n- \"ERROR\"\n- \"403\"\n- \"404\"\n- \"Access Denied\"\n- empty or extremely short text (< 200 characters)\n\nTHEN:\n\n- Do NOT attempt extraction\n- Mark fields as \"not_found\"\n- Add an additional field:\n\n\"source_status\": \"error_detected\"\n\nOtherwise:\n\n\"source_status\": \"ok\"\n\n--------------------------------\nFALLBACK RULE (STRICT)\n--------------------------------\n\nIf:\n- content is empty or unusable\n- AND no meaningful data is available\n\nTHEN you MAY use the URL to retrieve minimal information.\n\nConstraints:\n- Only homepage\n- No deep browsing\n- No guessing\n\n--------------------------------\nDATA RELIABILITY RULES\n--------------------------------\n\n- Do NOT hallucinate\n- Do NOT infer beyond visible text\n- If missing → \"not_found\"\n- Prefer explicit mentions\n\n--------------------------------\nEXTRACTION TASK\n--------------------------------\n\nExtract structured competitive intelligence for EACH URL.\n\n--------------------------------\nSTORE\n--------------------------------\n\n* brand_name\n* website_url (MUST match the input URL)\n* market_category\n* market_scope\n\n--------------------------------\nPRODUCT CATALOG\n--------------------------------\n\n* main_product_categories\n* product_types_sold\n* example_products\n* catalog_depth\n\n--------------------------------\nPRICING\n--------------------------------\n\n* price_range_detected\n* example_product_prices\n* pricing_position\n\n--------------------------------\nCUSTOMER REVIEWS\n--------------------------------\n\n* reviews_available\n* rating_detected\n* review_volume_indicator\n\n--------------------------------\nSOCIAL MEDIA\n--------------------------------\n\nDetect mentions of:\n\n* facebook\n* instagram\n* tiktok\n* twitter/x\n* youtube\n* linkedin\n\n--------------------------------\nCUSTOMER EXPERIENCE\n--------------------------------\n\n* shipping_information_present\n* return_policy_present\n* support_channels\n* live_chat_detected\n\n--------------------------------\nTECH STACK SIGNALS\n--------------------------------\n\nDetect ONLY if clearly visible:\n\n* Shopify\n* WooCommerce\n* Magento\n* Stripe\n* PayPal\n* Apple Pay\n* live chat tools\n\n--------------------------------\nOUTPUT FORMAT\n--------------------------------\n\nReturn JSON only.\n\n{\n  \"stores\":[\n    {\n      \"website_url\":\"\",\n      \"source_status\":\"ok | error_detected\",\n      \"brand_name\":\"\",\n      \"market_category\":\"\",\n      \"market_scope\":\"\",\n      \"product_catalog\":{\n        \"main_product_categories\":\"\",\n        \"product_types_sold\":\"\",\n        \"example_products\":\"\",\n        \"catalog_depth\":\"\"\n      },\n      \"pricing\":{\n        \"price_range_detected\":\"\",\n        \"example_product_prices\":\"\",\n        \"pricing_position\":\"\"\n      },\n      \"customer_reviews\":{\n        \"reviews_available\":\"\",\n        \"rating_detected\":\"\",\n        \"review_volume_indicator\":\"\"\n      },\n      \"social_media\":{\n        \"facebook\":\"\",\n        \"instagram\":\"\",\n        \"tiktok\":\"\",\n        \"twitter_x\":\"\",\n        \"youtube\":\"\",\n        \"linkedin\":\"\"\n      },\n      \"customer_experience\":{\n        \"shipping_information_present\":\"\",\n        \"return_policy_present\":\"\",\n        \"support_channels\":\"\",\n        \"live_chat_detected\":\"\"\n      },\n      \"tech_stack_signals\":[]\n    }\n  ]\n}\n\n--------------------------------\nIMPORTANT\n--------------------------------\n\n- Output MUST contain one object per URL\n- Do NOT merge multiple websites into one\n- Preserve input order\n- website_url must exactly match input\n- If content is invalid → still return object with \"error_detected\""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -736,
+        1184
+      ],
+      "id": "308bafa1-c250-44ee-bde4-2975842e16f7",
+      "name": "AI Agent3"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        992
+      ],
+      "id": "adc2d4c9-3a14-4f8b-86a3-49ca4728983b",
+      "name": "OpenRouter Chat Model3",
+      "credentials": {
+        "openRouterApi": {
+          "id": "4AeXjE10gb60YVZw",
+          "name": "OpenRouter account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const modelOutput = $input.first().json.output;\nconst text = $input.first().json.output || $input.first().json.text || \"\";\nconst cleaned = text.replace(/\\r\\n/g, \"\\n\");\n\n// extract main title\nconst regexTitle =  /\\*\\*(Individual Analysis)\\*\\*/;\n\nconst regex1 = /\\*\\*\\(1\\)\\s*(.*?)\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\(2\\)|\\*\\*\\(3\\)|\\*\\*\\(4\\)|$)/;\nconst regex2 = /\\*\\*\\(2\\)\\s*(.*?)\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\(3\\)|\\*\\*\\(4\\)|$)/;\nconst regex3 = /\\*\\*\\(3\\)\\s*(.*?)\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\(4\\)|$)/;\nconst regex4 = /\\*\\*\\(4\\)\\s*(.*?)\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\s*\\[|\\*\\*\\s*\\(|$)/;\n\n// GLOBAL ANALYSIS\nconst regex5  = /\\*\\*\\[\\s*1\\s*\\.\\s*Market Positioning\\s*\\]\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\[2|$)/i;\nconst regex6  = /\\*\\*\\[\\s*2\\s*\\.\\s*Product Portfolio\\s*\\]\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\[3|$)/i;\nconst regex7  = /\\*\\*\\[\\s*3\\s*\\.\\s*Pricing Positioning\\s*\\]\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\[4|$)/i;\nconst regex8  = /\\*\\*\\[\\s*4\\s*\\.\\s*Target Market\\s*\\]\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\[5|$)/i;\nconst regex9  = /\\*\\*\\[\\s*5\\s*\\.\\s*Competitive Strengths\\s*\\]\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\[6|$)/i;\nconst regex10 = /\\*\\*\\[\\s*6\\s*\\.\\s*Potential Weaknesses\\s*\\]\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\[7|$)/i;\nconst regex11 = /\\*\\*\\[\\s*7\\s*\\.\\s*Strategic Insights\\s*\\]\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*\\[8|$)/i;\nconst regex12 = /\\*\\*\\[\\s*8\\s*\\.\\s*Executive Summary\\s*\\]\\*\\*\\s*([\\s\\S]*?)$/i;\nconst regexTitle2 = /\\*\\*(Global Competitive Analysis)\\*\\*/;\n\nconst matchTitle = cleaned.match(regexTitle);\nconst matchTitle2 = cleaned.match(regexTitle2);\nconst match1 = cleaned.match(regex1);\nconst match2 = cleaned.match(regex2);\nconst match3 = cleaned.match(regex3);\nconst match4 = cleaned.match(regex4);\n\nconst match5 = cleaned.match(regex5);\nconst match6 = cleaned.match(regex6);\nconst match7 = cleaned.match(regex7);\nconst match8 = cleaned.match(regex8);\nconst match9 = cleaned.match(regex9);\nconst match10 = cleaned.match(regex10);\nconst match11 = cleaned.match(regex11);\nconst match12 = cleaned.match(regex12);\n\nlet mainTitle = \"\";\nlet section1 = \"\";\nlet section2 = \"\";\nlet section3 = \"\";\nlet section4 = \"\";\nlet SecondTitle= \"\";\nlet Market_Positioning = \"\";\nlet Product_Portfolio = \"\";\nlet Pricing_Positioning = \"\";\nlet Target_Market = \"\";\nlet Competitive_Strengths = \"\";\nlet Potential_Weaknesses = \"\";\nlet Strategic_Insights = \"\";\nlet Executive_Summary = \"\";\n\nif (matchTitle && matchTitle[1]) mainTitle = matchTitle[1].trim();\nif (matchTitle2 && matchTitle2[1]) {\n  SecondTitle = matchTitle2[1].trim();\n}\nif (match1) section1 = match1[1].trim() + \"\\n\\n\" + match1[2].trim();\nif (match2) section2 = match2[1].trim() + \"\\n\\n\" + match2[2].trim();\nif (match3) section3 = match3[1].trim() + \"\\n\\n\" + match3[2].trim();\nif (match4) section4 = match4[1].trim() + \"\\n\\n\" + match4[2].trim();\n\nif (match5) Market_Positioning = match5[1].trim();\nif (match6) Product_Portfolio = match6[1].trim();\nif (match7) Pricing_Positioning = match7[1].trim();\nif (match8) Target_Market = match8[1].trim();\nif (match9) Competitive_Strengths = match9[1].trim();\nif (match10) Potential_Weaknesses = match10[1].trim();\nif (match11) Strategic_Insights = match11[1].trim();\nif (match12) Executive_Summary = match12[1].trim();\n\nreturn [\n{\njson: {\noutput: modelOutput,\nTitle: mainTitle,\nSection1: section1,\nSection2: section2,\nSection3: section3,\nSection4: section4,\nSecondTitle : SecondTitle,\nMarket_Positioning,\nProduct_Portfolio,\nPricing_Positioning,\nTarget_Market,\nCompetitive_Strengths,\nPotential_Weaknesses,\nStrategic_Insights,\nExecutive_Summary\n}\n}\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        1168
+      ],
+      "id": "99e631d1-2a3d-471b-92ef-effa01b4e661",
+      "name": "Code in JavaScript6"
+    },
+    {
+      "parameters": {
+        "jsCode": "const market_type = $('On form submission').first().json['market type'];\nconst Analyse_Repport = \"Competition Report of: \";\nconst country = $('On form submission').first().json.country;\nconst ont = \" of country: \";\nconst out = 0;\nconst next = Number(out) + 1;\n\nreturn [\n  {\n    json: {\n      doc_title: `${Analyse_Repport}${market_type}${ont}${country} ${next}`,\n      big : `${Analyse_Repport}${market_type}`\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        1152
+      ],
+      "id": "435f4007-16e0-4a02-bdc7-fe490d7afb04",
+      "name": "Code in JavaScript8"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the following structured company data and generate a professional competitive analysis report.\n\nThe report will be stored in Google Docs and used for market research.\n\nOnly analyze the provided information.\n\nCompany Data:\n{{ $json.output }}\n\nGenerate the report using the required structure.",
+        "options": {
+          "systemMessage": "You are a **Senior Market Intelligence Analyst specialized in e-commerce competitor analysis**.\n\nYour task is to convert structured **JSON company data** into a **professional competitive analysis report suitable for Google Docs**.\n\n--------------------------------------------------\n\nCORE RULES\n\n• Only analyze the provided JSON data.\n• Do not invent, infer, or assume missing information.\n• If a field is missing, explicitly state: \"Information not available.\"\n• Use a formal consulting tone similar to strategy consulting reports.\n• Keep the report clear, structured, and concise.\n• Strictly avoid tables.\n• Strictly avoid comparison grids.\n• Strictly avoid bullet comparisons.\n• Do NOT include separators such as --- anywhere in the report.\n• Do NOT include word count statements such as \"(Word count: ...)\".\n• The report must be written only with headings and paragraphs.\n\n--------------------------------------------------\n\nTITLE FORMATTING RULES\n\nAll section titles MUST be bold and follow this exact formatting style:\n\n**Title Name**\n\nDo NOT add extra symbols, separators, or punctuation.\n\n--------------------------------------------------\n\nINDIVIDUAL STORE ANALYSIS FORMAT\n\nStart with the section title:\n\n**Individual Analysis**\n\nThen analyze each company/store separately.\n\nEach store title MUST follow this exact format:\n\n**(1) Store Name – Individual Analysis**\n**(2) Store Name – Individual Analysis**\n**(3) Store Name – Individual Analysis**\n**(4) Store Name – Individual Analysis**\n\nRules for this section:\n\n• Each store must be analyzed independently.\n• Do NOT compare companies in this section.\n• Write one concise paragraph per store covering:\n  - Company Overview\n  - Market Positioning\n  - Product Portfolio\n  - Pricing Positioning\n  - Target Market\n\n--------------------------------------------------\n\nGLOBAL COMPETITIVE ANALYSIS\n\nAfter completing all individual store analyses, continue with the global market analysis using these EXACT section titles:\n\n[1.Market Positioning]\n\n[2.Product Portfolio]\n\n[3.Pricing Positioning]\n\n[4.Target Market]\n\n[5.Competitive Strengths]\n\n[6.Potential Weaknesses]\n\n[7.Strategic Insights]\n\n[8.Executive Summary]\n\nRules for these sections:\n\n• Analyze insights across all companies collectively.\n• Maintain paragraph-based analysis.\n• Do NOT use tables.\n• Do NOT use comparison grids.\n• Do NOT repeat the individual analysis format.\n\n--------------------------------------------------\n\nOUTPUT CONSTRAINTS\n\n• Total length must be between 500 and 700 words.\n• Use professional paragraph analysis.\n• Use bold titles exactly as specified.\n• Ensure formatting is clean and suitable for direct insertion into Google Docs."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -416,
+        1184
+      ],
+      "id": "6e0e7314-c934-4b21-a6ba-0f550db89be5",
+      "name": "AI Agent4"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "competition_repport",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_c_p": 0,
+            "year_c_p": 0,
+            "repport": "={{ $('AI Agent4').item.json.output }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_c_p",
+              "displayName": "id_c_p",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_c_p",
+              "displayName": "year_c_p",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "links",
+              "displayName": "links",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "repport",
+              "displayName": "repport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "verif",
+              "displayName": "verif",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        336,
+        1504
+      ],
+      "id": "b2ec7041-65ce-4a50-9d64-55c17288e79d",
+      "name": "Insert rows in a table6",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extracting_urls": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "link1": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "link1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "link2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait2": {
+      "main": [
+        [
+          {
+            "node": "link2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait3": {
+      "main": [
+        [
+          {
+            "node": "link3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait4": {
+      "main": [
+        [
+          {
+            "node": "link3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait5": {
+      "main": [
+        [
+          {
+            "node": "link4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait6": {
+      "main": [
+        [
+          {
+            "node": "link4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Wait3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "Wait5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "link4": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query6",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "content4": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "content1": {
+      "main": [
+        [
+          {
+            "node": "Wait2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "content2": {
+      "main": [
+        [
+          {
+            "node": "Wait4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "link3": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "link2": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "content3": {
+      "main": [
+        [
+          {
+            "node": "Wait6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "content1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "content2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "content3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "content4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Wait13",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait14",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain3",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain3": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items3": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Basic LLM Chain3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "link": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "link5": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "link6": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "link7": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query7",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait7": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait8": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait9": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait10": {
+      "main": [
+        [
+          {
+            "node": "link7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait11": {
+      "main": [
+        [
+          {
+            "node": "link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait12": {
+      "main": [
+        [
+          {
+            "node": "link5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait13": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If4": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait12",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If6": {
+      "main": [
+        [
+          {
+            "node": "Wait13",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If7": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait11",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If8": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait14": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript5": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript7": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "link6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Wait12",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Wait11",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields4": {
+      "main": [
+        [
+          {
+            "node": "Wait10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table1": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table2": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table3": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table4": {
+      "main": [
+        [
+          {
+            "node": "link1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query3": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query4": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query5": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query6": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query7": {
+      "main": [
+        [
+          {
+            "node": "link4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent2": {
+      "main": [
+        [
+          {
+            "node": "extracting_urls",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Form": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "link8": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query8",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If9": {
+      "main": [
+        [
+          {
+            "node": "Wait15",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait15": {
+      "main": [
+        [
+          {
+            "node": "link8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Form",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table5": {
+      "main": [
+        [
+          {
+            "node": "link8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query8": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent3",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent3": {
+      "main": [
+        [
+          {
+            "node": "AI Agent4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent4",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript6": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript8": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent4": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "content": {
+      "main": [
+        [
+          {
+            "node": "AI Agent3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "7a2d12c1-2489-4e17-a7ab-1dcf8e5ca719",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cb419ad69e8aba8cf2108913785cdc48603a429b7ff4ca05f8b5d325e127e837"
+  },
+  "id": "hgnhxWPFhrMnHNG1",
+  "tags": []
+}

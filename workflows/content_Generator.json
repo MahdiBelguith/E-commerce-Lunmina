@@ -1,0 +1,3655 @@
+{
+  "name": "content_Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Generate the full product content sheet for the following product:\n\nProduct Name           : {{ $json.query.product_name }}\nBrand                  : {{ $json.query.brand }}\nCategory / Product Type  : {{ $json.query.main_category }} / {{ $json.query.product_type }}\nModel / Reference      : {{ $json.query.model_reference }}\nMaterial               : {{ $json.query.material }}\nSize / Dimensions      : {{ $json.query.size_dimensions }}\nWeight                 : {{ $json.query.weight }}\nColor                  : {{ $json.query.color }}\nPower / Voltage        : {{ $json.query.power_voltage }}\nCompatibility          : {{ $json.query.compatibility }}\nIncluded in Box        : {{ $json.query.included_in_box }}\nLanguage Style         : {{ $json.query.language_style }}\nPrice(TTC)             : {{ $json.query.price }}",
+        "options": {
+          "systemMessage": "You are a senior e-commerce content strategist, conversion copywriter, and social media marketing specialist.\n\nYour role is to generate a complete, structured, automation-ready product content package strictly based on the user input provided.\n\nEvery section must be clean, clearly separated, and independently usable.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nGOALS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n- A professional e-commerce product sheet\n- Generate platform-native social media captions (Facebook, Instagram, LinkedIn)\n- Write a concise meta description résumé highlighting the most critical product information\n- Maintain a clean, persuasive, and SEO-conscious marketing tone throughout\n- Output must be structured, parseable, and copy-paste ready for each platform\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nZERO-HALLUCINATION POLICY (CRITICAL)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n- Use STRICTLY the information provided in the input.\n- NEVER invent specifications, materials, features, compatibility, dimensions, weight, or technical data.\n- NEVER assume missing information.\n- Do NOT write placeholders such as \"Not specified\".\n-  Do NOT exaggerate performance or add unverified claims.\n-  Do NOT fabricate certifications, guarantees, or awards.\n- Accuracy overrides marketing creativity.\n- DO NOT generate tables or markdown tables\n- If a field is missing or empty, skip it naturally — do not write \"Not specified\"\n- Never repeat the same sentence across sections\n- Maintain a professional, attractive tone at all times\n- Write everything in the language specified in the \"Language style\" field (FR / EN / AR)\n- Use the exact section headers and separators shown in the OUTPUT FORMAT below\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nOUTPUT FORMAT (MANDATORY)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nReturn clean plain text only.\nDo not add commentary. Do not explain the fixes.\nUse the exact section headers wrapped in brackets as shown below.\nEach section must be visibly separated so it can be split and parsed independently.\n\n---\n[1. PRODUCT TITLE]\nOne short, optimized, professional product title. Maximum 80 characters.\n\n---\n[2. SHORT PRODUCT SUMMARY]\n2 to 3 sentences. What the product is, what problem it solves, why it stands out.\n\n---\n[3. KEY BENEFITS]\nVALIDATION RULES:\n- Minimum 3 bullet points. Maximum 20 bullet points.\n- Each bullet must start with a strong action verb or value-driven adjective.\n- Focus on value, comfort, efficiency, and user experience.\nFormat:\n- ...\n- ...\n\n---\n[4. TECHNICAL SPECIFICATIONS]\nList only specifications available in the input data. One spec per line.\n- ...\n- ...\n\n---\n[5. WHAT'S IN THE BOX]\nBased strictly on the \"Included in Box\" field. One item per line.\n- ...\n- ...\n\n---\n[6. IDEAL FOR]\nVALIDATION RULES:\n- Minimum 5 words. Maximum 25 words.\n- Natural prose only. No bullet points.\n- Describe target audience and relevant use cases (home, office, professionals, students, travelers, etc.).\n\n---\n[7. META DESCRIPTION RÉSUMÉ]\nExactly ONE paragraph of 3 to 5 sentences.\nMust include: product name, primary function, top 2 or 3 key features or specs, and ideal audience.\n\n---\n[8. SEO META DESCRIPTION]\nVALIDATION RULES:\n- One single sentence.\n- Minimum 40 characters. Maximum 160 characters.\n- No hashtags. No emojis.\n- Must include the product name and its core value proposition.\n\n---\n[8b. SOCIAL MEDIA LINK PREVIEW DESCRIPTION]\nMaximum 200 characters. Warm, benefit-driven tone. No hashtags. No emojis.\n\n---\n[9. SOCIAL MEDIA CAPTIONS]\n\n++ FACEBOOK CAPTION ++\nVALIDATION RULES:\n- Minimum 10 words. Maximum 70 words.\n- Minimum 3 emojis. Maximum 6 emojis. Placed naturally in the text.\n- No hashtags.\nStructure:\n- Line 1: Hook sentence (attention-grabbing)\n- Lines 2–4: 2 to 3 short value lines using • or ✔\n- Line 5: Clear Call-To-Action (CTA)\nTone: Warm, engaging, conversational.\n\n++ INSTAGRAM CAPTION ++\nVALIDATION RULES:\n- Minimum 10 words, maximum 70 words — excluding hashtags.\n- Minimum 10 hashtags. Maximum 15 hashtags. Grouped at the bottom.\n- Use emojis freely and intentionally.\nStructure:\n- Line 1: One bold hook sentence (no more than 10 words)\n- Lines 2–4: 3 to 5 ultra-short value lines, each starting with an emoji\n- Line 5: One CTA sentence\n- Line 6: 10 to 15 relevant hashtags\nTone: Punchy, visual, lifestyle-oriented.\n\n++ LINKEDIN CAPTION ++\nVALIDATION RULES:\n- Minimum 10 words. Maximum 70 words.\n- Maximum 2 emojis. Use only if appropriate.\n- Minimum 3 hashtags. Maximum 5 hashtags. Professional only.\nStructure:\n- Line 1: A sharp opening insight or question\n- Lines 2–4: 2 to 3 professional value propositions\n- Line 5: A business-focused CTA\n- Line 6: 3 to 5 professional hashtags\nTone: Professional, insightful, business-oriented. No fluff.\n\n---\n[10. CALL-TO-ACTION (CTA)]\nVALIDATION RULES:\n- Maximum 10 words.\n- Must begin with or contain a clear action verb (e.g. Shop, Discover, Get, Order, Explore, Try).\n- No hashtags.\nOne standalone CTA sentence. Suitable for buttons, banners, or end of any caption.\n\n---\n[11. FICHE PRODUIT LÉGALE]\nVALIDATION RULES:\n- Always written in French.\n- Minimum 100 characters of content.\n- Must include all available fields listed below.\n\nDénomination du produit : [Full legal product name. No marketing language.]\nMarque : [Brand name as provided.]\nRéférence / Modèle : [Exact model or reference number. Skip if not provided.]\nMatière : [Exact material(s) as provided. Multiple materials separated by commas.]\nDimensions / Poids :\n- Dimensions : [as provided, with unit]\n- Poids : [as provided, with unit]\nCouleur : [Exact color as provided.]\nPrix TTC : [Price followed by TTC and currency. If missing: \"Prix : À définir par le vendeur (TTC)\"]\nContenu de la boîte :\n— [item 1]\n— [item 2]\nNote légale : Ce produit est vendu conformément aux obligations d'information précontractuelle en vigueur. Les caractéristiques indiquées sont basées sur les données fournies par le vendeur.\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nFINAL INSTRUCTION\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nReturn clean plain text only.\nUse the exact section headers wrapped in brackets: [1. PRODUCT TITLE], [2. SHORT PRODUCT SUMMARY], etc.\nUse ++ PLATFORM NAME ++ markers for the three social media captions.\nNo JSON. No markdown syntax. No HTML. No tables.\nEach section must be visibly separated so it can be split and parsed independently in an automation workflow."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -7504,
+        -1968
+      ],
+      "id": "a2df9f64-6c99-48b4-861a-16ce1bbd60f9",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "arcee-ai/trinity-large-preview:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -7504,
+        -1824
+      ],
+      "id": "36b75499-cd5b-4f6f-b3c1-526f8ada7bd4",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "MwfjNq7ruLpbyk1N",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "PULL ME IN ERROR CASE\n\n\n\nif this node interrupted for some reson we should replace the account connecting on the model by another one\n\n",
+        "width": 224
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -7504,
+        -2032
+      ],
+      "id": "01528818-06fc-423c-a3bc-e1bfeeca564d",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "jsCode": "const product_title = $('Webhook').first().json.query.product_name;\nconst Social_media = \"Facebook Caption of \"\nconst out = $input.first().json.value ?? 0;\nconst next = Number(out) + 1;\nconst time =$now ;\nreturn [\n  {\n    json: {\n      doc_title: `${Social_media}${product_title}_${next}`,\n      created_at : time,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5632,
+        -1952
+      ],
+      "id": "1095ea38-02e1-47b5-bf47-173aab47c13e",
+      "name": "Facebook Doc Titel"
+    },
+    {
+      "parameters": {
+        "jsCode": "const product_title = $('Webhook').first().json.query.product_name;\nconst Social_media = \"Instagram Caption of \"\nconst out = $input.first().json.value ?? 0;\nconst next = Number(out) + 1;\nconst time =$now ;\nreturn [\n  {\n    json: {\n      doc_title: `${Social_media}${product_title}_${next}`,\n      created_at : time,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -6016,
+        -1952
+      ],
+      "id": "71232b0d-f4a7-493b-a93a-bccd4e99493b",
+      "name": "Instagram Doc Title"
+    },
+    {
+      "parameters": {
+        "jsCode": "const product_title = $('Webhook').first().json.query.product_name;\nconst Social_media = \"LinkedIn Caption of \"\nconst out = $input.first().json.value ?? 0;\nconst next = Number(out) + 1;\nconst time =$now ;\nreturn [\n  {\n    json: {\n      doc_title: `${Social_media}${product_title}_${next}`,\n      created_at : time,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5296,
+        -1952
+      ],
+      "id": "06e68cd0-da1c-4958-a1f8-d27f08e26cf4",
+      "name": "LinkedIn Doc Title"
+    },
+    {
+      "parameters": {
+        "jsCode": "const product_title =$('Webhook').first().json.query.product_name ;\nconst Social_media = \"Product sheet of \"\nconst out = $input.first().json.value ?? 0;\nconst next = Number(out) + 1;\nconst time =$now ;\nreturn [\n  {\n    json: {\n      doc_title: `${Social_media}${product_title}_${next}`,\n      created_at : time,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4240,
+        -1952
+      ],
+      "id": "ab529e09-304b-45d1-9d18-8eaf1ccb99c2",
+      "name": "Product_Sheet_title"
+    },
+    {
+      "parameters": {
+        "jsCode": "const modelOutput = $input.first().json.output ;\nconst message =$('Webhook').first().json.query.product_name + \" description\" ;\nconst text = $('AI Agent').first().json.output || $('AI Agent').first().json.input || \"\";\nconst cleaned = text.replace(/\\r\\n/g, \"\\n\");\n//extract insta caption\nconst regex = /\\+\\+\\s*INSTAGRAM CAPTION\\s*\\+\\+\\s*\\n([\\s\\S]*?)(\\n\\s*\\[10\\.|\\n\\s*\\+\\+|\\n\\s*\\[|\\s*$)/i;\n//extract facebook caption\nconst regex1 = /\\+\\+\\s*FACEBOOK CAPTION\\s*\\+\\+\\s*\\n([\\s\\S]*?)(\\n\\s*\\[10\\.|\\n\\s*\\+\\+|\\n\\s*\\[|\\s*$)/i;\n//extract linkedin caption\nconst regex2 = /\\+\\+\\s*LINKEDIN CAPTION\\s*\\+\\+\\s*\\n([\\s\\S]*?)(\\n\\s*\\[10\\.|\\n\\s*\\+\\+|\\n\\s*\\[|\\s*$)/i;\n//extract Product Sheet \nconst regex3 = /\\[11\\.\\s*FICHE PRODUIT LÉGALE\\]\\s*\\n([\\s\\S]*?)(?=\\n\\s*\\[|\\s*$)/i;\n//extract IDEAL FOR \nconst regex4 = /\\[6\\.\\s*IDEAL FOR\\]\\s*\\n([\\s\\S]*?)(\\n\\s*\\[9\\.|\\n\\s*\\[|\\s*$)/i;\n//extract CALL TO ACTION\nconst regex5 = /\\[10\\.\\s*CALL-TO-ACTION\\s*\\(CTA\\)\\]\\s*\\n([\\s\\S]*?)(?=\\n\\s*\\[|\\s*$)/i;\n//extract metaDescription \nconst regex6 = /\\[8\\.\\s* SEO META DESCRIPTION\\]\\s*\\n([\\s\\S]*?)(?=\\n\\s*\\[|\\s*$)/i;\n//extract key benefets\nconst regex7 = /\\[3\\.\\s*KEY BENEFITS\\]\\s*\\n([\\s\\S]*?)(?=\\n\\s*\\[|\\s*$)/i;\n\nconst match0 = cleaned.match(regex);\nconst match1 = cleaned.match(regex1);\nconst match2 = cleaned.match(regex2);\nconst match3 = cleaned.match(regex3);\nconst match4 = cleaned.match(regex4);\nconst match5 = cleaned.match(regex5);\nconst match6 = cleaned.match(regex6);\nconst match7 = cleaned.match(regex7);\n\nlet Instagram = \"\";\nlet Facebook = \"\";\nlet linkedInCaption = \"\";\nlet ProductSheet = \"\" ;\nlet IDEA = \"\";\nlet CTA = \"\";\nlet SEO = \"\";\nlet keyBenefits = \"\";\n\nif (match0 && match0[1]) {\n  Instagram = match0[1]\n    .replace(/\\n+/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nif (match1 && match1[1]) {\n  Facebook = match1[1]\n    .replace(/\\n+/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nif (match2 && match2[1]) {\n  linkedInCaption = match2[1]\n    .replace(/\\n+/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nif (match3 && match3[1]){\n  ProductSheet = match3[1]\n   .replace(/\\n+/g, \" \")\n   .replace(/\\s+/g, \" \")\n   .trim();\n}\n\nif (match4 && match4[1]) {\n    IDEA = match4[1]\n    .replace(/\\n+/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nif (match5 && match5[1]) {\n    CTA = match5[1]\n    .replace(/\\n+/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nif (match6 && match6[1]) {\n    SEO = match6[1]\n    .replace(/\\n+/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nif (match7 && match7[1]) {\n    keyBenefits = match7[1]\n    .replace(/\\n+/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nreturn [\n  {\n    json: {\n      output1: message,\n      output: modelOutput,\n      \"Instagram Caption\": Instagram,\n      \"FacebookCaption\": Facebook,\n      \"LinkedIn Caption\": linkedInCaption,\n      \"ProductSheet\" : ProductSheet,\n      \"IDEAL FOR\": IDEA,\n      \"CALL TO ACTION\": CTA,\n      \"MetaDescription\" : SEO,\n      \"KeyBenifets\" : keyBenefits\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -7008,
+        -1968
+      ],
+      "id": "6b27f806-0daa-4157-b4a6-9769571bfec5",
+      "name": "Extruction of social media caption and product sheet"
+    },
+    {
+      "parameters": {
+        "path": "contentgenerator",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -7792,
+        -1968
+      ],
+      "id": "0d44e190-814a-424d-8fc8-c3b7e77a12eb",
+      "name": "Webhook",
+      "webhookId": "0b4344f2-2eed-4470-8815-bc44664f02ce",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const product_title = $('Webhook').first().json.query.product_name;\nconst Social_media = \"Call To Action of \"\nconst out = $input.first().json.value ?? 0;\nconst next = Number(out) + 1;\nconst time =$now ;\nreturn [\n  {\n    json: {\n      doc_title: `${Social_media}${product_title}_${next}`,\n      created_at : time,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4976,
+        -1952
+      ],
+      "id": "a33d2147-eb08-4664-8c08-e1fc93f080ea",
+      "name": "CTA doc Titel"
+    },
+    {
+      "parameters": {
+        "jsCode": "const product_title = $('Webhook').first().json.query.product_name;\nconst Social_media = \" SEO META DESCRIPTION\"\nconst out = $input.first().json.value ?? 0;\nconst next = Number(out) + 1;\nconst time =$now ;\nreturn [\n  {\n    json: {\n      doc_title: `${Social_media}${product_title}_${next}`,\n      created_at : time,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4608,
+        -1952
+      ],
+      "id": "39614003-34ec-4c48-bc45-885f7f843d29",
+      "name": "Meta Description Titel"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "product",
+          "mode": "list",
+          "cachedResultName": "product"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_p": 0,
+            "year_p": 0,
+            "product_name": "={{ $('Webhook').item.json.query.product_name }}",
+            "brand": "={{ $('Webhook').item.json.query.brand }}",
+            "model": "={{ $('Webhook').item.json.query.model_reference }}",
+            "material": "={{ $('Webhook').item.json.query.material }}",
+            "reference_or_commercial_model_code": "={{ $('Webhook').item.json.query.reference }}",
+            "size_dimensions": "={{ $('Webhook').item.json.query.size_dimensions }}",
+            "weight": "={{ $('Webhook').item.json.query.weight }}",
+            "color": "={{ $('Webhook').item.json.query.color }}",
+            "stock": "={{ $('Webhook').item.json.query.Stock }}",
+            "power_voltage": "={{ $('Webhook').item.json.query.power_voltage }}",
+            "compatibility": "={{ $('Webhook').item.json.query.compatibility }}",
+            "included_in_box": "={{ $('Webhook').item.json.query.included_in_box }}",
+            "price": "={{ $('Webhook').item.json.query.price }}",
+            "main_category": "={{ $('Webhook').item.json.query.main_category }} {{ $('Webhook').item.json.query.product_type }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_p",
+              "displayName": "id_p",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_p",
+              "displayName": "year_p",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "country",
+              "displayName": "country",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_name",
+              "displayName": "product_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "main_category",
+              "displayName": "main_category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reference_or_commercial_model_code",
+              "displayName": "reference_or_commercial_model_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "material",
+              "displayName": "material",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "size_dimensions",
+              "displayName": "size_dimensions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "weight",
+              "displayName": "weight",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "stock",
+              "displayName": "stock",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "color",
+              "displayName": "color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "power_voltage",
+              "displayName": "power_voltage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "compatibility",
+              "displayName": "compatibility",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "included_in_box",
+              "displayName": "included_in_box",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "image",
+              "displayName": "image",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -7168,
+        -1968
+      ],
+      "id": "b05895c2-c84d-4383-ae8f-ffab47916e33",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "content_generated",
+          "mode": "list",
+          "cachedResultName": "content_generated"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_c_ge": 0,
+            "year_c_ge": 0,
+            "content_generated": "=Instagramme Post Content of   {{ $('Instagram Doc Title').item.json.doc_title }} ",
+            "generated_at": "={{ $('Instagram Doc Title').item.json.created_at }}",
+            "product_name": "={{ $('Webhook').item.json.query.product_name }}",
+            "main_category": "={{ $('Webhook').item.json.query.main_category }} {{ $('Webhook').item.json.query.product_type }}",
+            "brand": "={{ $('Webhook').item.json.query.brand }}",
+            "model": "={{ $('Webhook').item.json.query.model_reference }}",
+            "reference_or_commercial_model_code": "={{ $('Webhook').item.json.query.reference }}",
+            "material": "={{ $('Webhook').item.json.query.material }}",
+            "size_dimensions": "={{ $('Webhook').item.json.query.size_dimensions }}",
+            "weight": "={{ $('Webhook').item.json.query.weight }}",
+            "color": "={{ $('Webhook').item.json.query.color }}",
+            "power_voltage": "={{ $('Webhook').item.json.query.power_voltage }}",
+            "compatibility": "={{ $('Webhook').item.json.query.compatibility }}",
+            "included_in_box": "={{ $('Webhook').item.json.query.included_in_box }}",
+            "price": "={{ $('Webhook').item.json.query.price }}",
+            "content": "={{ $('Extruction of social media caption and product sheet').item.json['Instagram Caption'] }} {{ $('Extruction of social media caption and product sheet').item.json['CALL TO ACTION'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_c_ge",
+              "displayName": "id_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_c_ge",
+              "displayName": "year_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content_generated",
+              "displayName": "content_generated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "generated_at",
+              "displayName": "generated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_name",
+              "displayName": "product_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "main_category",
+              "displayName": "main_category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reference_or_commercial_model_code",
+              "displayName": "reference_or_commercial_model_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "material",
+              "displayName": "material",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "size_dimensions",
+              "displayName": "size_dimensions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "weight",
+              "displayName": "weight",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "color",
+              "displayName": "color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "power_voltage",
+              "displayName": "power_voltage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "compatibility",
+              "displayName": "compatibility",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "included_in_box",
+              "displayName": "included_in_box",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -5824,
+        -1952
+      ],
+      "id": "e908cc01-fd93-48b4-ad3c-cddda51883e1",
+      "name": "Insert rows in a table1",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "content_generated",
+          "mode": "list",
+          "cachedResultName": "content_generated"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_c_ge": 0,
+            "year_c_ge": 0,
+            "content_generated": "=Facebook Caption of {{ $('Facebook Doc Titel').item.json.doc_title }} ",
+            "generated_at": "={{ $('Facebook Doc Titel').item.json.created_at }}",
+            "product_name": "={{ $('Webhook').item.json.query.product_name }}",
+            "main_category": "={{ $('Webhook').item.json.query.main_category }} {{ $('Webhook').item.json.query.product_type }}",
+            "brand": "={{ $('Webhook').item.json.query.brand }}",
+            "model": "={{ $('Webhook').item.json.query.model_reference }}",
+            "reference_or_commercial_model_code": "={{ $('Webhook').item.json.query.reference }}",
+            "material": "={{ $('Webhook').item.json.query.material }}",
+            "size_dimensions": "={{ $('Webhook').item.json.query.size_dimensions }}",
+            "weight": "={{ $('Webhook').item.json.query.weight }}",
+            "color": "={{ $('Webhook').item.json.query.color }}",
+            "power_voltage": "={{ $('Webhook').item.json.query.power_voltage }}",
+            "compatibility": "={{ $('Webhook').item.json.query.compatibility }}",
+            "included_in_box": "={{ $('Webhook').item.json.query.included_in_box }}",
+            "price": "={{ $('Webhook').item.json.query.price }}",
+            "content": "={{ $('Extruction of social media caption and product sheet').item.json.FacebookCaption }} {{ $('Extruction of social media caption and product sheet').item.json['CALL TO ACTION'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_c_ge",
+              "displayName": "id_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_c_ge",
+              "displayName": "year_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content_generated",
+              "displayName": "content_generated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "generated_at",
+              "displayName": "generated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_name",
+              "displayName": "product_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "main_category",
+              "displayName": "main_category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reference_or_commercial_model_code",
+              "displayName": "reference_or_commercial_model_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "material",
+              "displayName": "material",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "size_dimensions",
+              "displayName": "size_dimensions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "weight",
+              "displayName": "weight",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "color",
+              "displayName": "color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "power_voltage",
+              "displayName": "power_voltage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "compatibility",
+              "displayName": "compatibility",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "included_in_box",
+              "displayName": "included_in_box",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -5472,
+        -1952
+      ],
+      "id": "773a7758-e563-40f6-90f2-1c3c4a3ae2b2",
+      "name": "Insert rows in a table2",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "content_generated",
+          "mode": "list",
+          "cachedResultName": "content_generated"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_c_ge": 0,
+            "year_c_ge": 0,
+            "content_generated": "=LinkedIn Caption of {{ $('LinkedIn Doc Title').item.json.doc_title }}",
+            "generated_at": "=requested at {{ $('LinkedIn Doc Title').item.json.created_at }}",
+            "product_name": "= {{ $('Webhook').item.json.query.product_name }}",
+            "main_category": "={{ $('Webhook').item.json.query.main_category }} {{ $('Webhook').item.json.query.product_type }}",
+            "brand": "={{ $('Webhook').item.json.query.brand }}",
+            "model": "={{ $('Webhook').item.json.query.model_reference }}",
+            "reference_or_commercial_model_code": "={{ $('Webhook').item.json.query.reference }}",
+            "material": "={{ $('Webhook').item.json.query.material }}",
+            "size_dimensions": "={{ $('Webhook').item.json.query.size_dimensions }}",
+            "weight": "={{ $('Webhook').item.json.query.weight }}",
+            "color": "={{ $('Webhook').item.json.query.color }}",
+            "power_voltage": "={{ $('Webhook').item.json.query.power_voltage }}",
+            "compatibility": "={{ $('Webhook').item.json.query.compatibility }}",
+            "included_in_box": "={{ $('Webhook').item.json.query.included_in_box }}",
+            "price": "={{ $('Webhook').item.json.query.price }}",
+            "content": "={{ $('Extruction of social media caption and product sheet').item.json['LinkedIn Caption'] }} {{ $('Extruction of social media caption and product sheet').item.json['IDEAL FOR'] }} {{ $('Extruction of social media caption and product sheet').item.json['CALL TO ACTION'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_c_ge",
+              "displayName": "id_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_c_ge",
+              "displayName": "year_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content_generated",
+              "displayName": "content_generated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "generated_at",
+              "displayName": "generated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_name",
+              "displayName": "product_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "main_category",
+              "displayName": "main_category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reference_or_commercial_model_code",
+              "displayName": "reference_or_commercial_model_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "material",
+              "displayName": "material",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "size_dimensions",
+              "displayName": "size_dimensions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "weight",
+              "displayName": "weight",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "color",
+              "displayName": "color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "power_voltage",
+              "displayName": "power_voltage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "compatibility",
+              "displayName": "compatibility",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "included_in_box",
+              "displayName": "included_in_box",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -5136,
+        -1952
+      ],
+      "id": "8b6c6a3e-dda8-4d8b-86d9-97c753f91675",
+      "name": "Insert rows in a table3",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "content_generated",
+          "mode": "list",
+          "cachedResultName": "content_generated"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_c_ge": 0,
+            "year_c_ge": 0,
+            "content_generated": "={{ $('Webhook').item.json.doc_title }} ",
+            "generated_at": "={{ $('Webhook').item.json.created_at }}",
+            "product_name": "={{ $('Webhook').item.json.query.product_name }}",
+            "main_category": "={{ $('Webhook').item.json.query.main_category }} {{ $('Webhook').item.json.query.product_type }}",
+            "brand": "={{ $('Webhook').item.json.query.brand }}",
+            "model": "={{ $('Webhook').item.json.query.model_reference }}",
+            "reference_or_commercial_model_code": "={{ $('Webhook').item.json.query.reference }}",
+            "material": "={{ $('Webhook').item.json.query.material }}",
+            "size_dimensions": "={{ $('Webhook').item.json.query.size_dimensions }}",
+            "weight": "={{ $('Webhook').item.json.query.weight }}",
+            "color": "={{ $('Webhook').item.json.query.color }}",
+            "power_voltage": "={{ $('Webhook').item.json.query.power_voltage }}",
+            "compatibility": "={{ $('Webhook').item.json.query.compatibility }}",
+            "included_in_box": "={{ $('Webhook').item.json.query.included_in_box }}",
+            "price": "={{ $('Webhook').item.json.query.price }}",
+            "content": "={{ $('Extruction of social media caption and product sheet').item.json['CALL TO ACTION'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_c_ge",
+              "displayName": "id_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_c_ge",
+              "displayName": "year_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content_generated",
+              "displayName": "content_generated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "generated_at",
+              "displayName": "generated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_name",
+              "displayName": "product_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "main_category",
+              "displayName": "main_category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reference_or_commercial_model_code",
+              "displayName": "reference_or_commercial_model_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "material",
+              "displayName": "material",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "size_dimensions",
+              "displayName": "size_dimensions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "weight",
+              "displayName": "weight",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "color",
+              "displayName": "color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "power_voltage",
+              "displayName": "power_voltage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "compatibility",
+              "displayName": "compatibility",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "included_in_box",
+              "displayName": "included_in_box",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -4784,
+        -1952
+      ],
+      "id": "fe1a2e95-3fb2-4e0b-ae35-40f25f80e198",
+      "name": "Insert rows in a table4",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "content_generated",
+          "mode": "list",
+          "cachedResultName": "content_generated"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_c_ge": 0,
+            "year_c_ge": 0,
+            "content_generated": "={{ $json.doc_title }} ",
+            "generated_at": "={{ $json.created_at }}",
+            "product_name": "={{ $('Webhook').item.json.query.product_name }}",
+            "main_category": "={{ $('Webhook').item.json.query.main_category }} {{ $('Webhook').item.json.query.product_type }}",
+            "brand": "={{ $('Webhook').item.json.query.brand }}",
+            "model": "={{ $('Webhook').item.json.query.model_reference }}",
+            "reference_or_commercial_model_code": "={{ $('Webhook').item.json.query.reference }}",
+            "material": "={{ $('Webhook').item.json.query.material }}",
+            "size_dimensions": "={{ $('Webhook').item.json.query.size_dimensions }}",
+            "weight": "={{ $('Webhook').item.json.query.weight }}",
+            "color": "={{ $('Webhook').item.json.query.color }}",
+            "power_voltage": "={{ $('Webhook').item.json.query.power_voltage }}",
+            "compatibility": "={{ $json.query.compatibility }}",
+            "included_in_box": "={{ $('Webhook').item.json.query.included_in_box }}",
+            "price": "={{ $('Webhook').item.json.query.price }}",
+            "content": "={{ $('Extruction of social media caption and product sheet').item.json.MetaDescription }}\n{{ $('Extruction of social media caption and product sheet').item.json.KeyBenifets }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_c_ge",
+              "displayName": "id_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_c_ge",
+              "displayName": "year_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content_generated",
+              "displayName": "content_generated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "generated_at",
+              "displayName": "generated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_name",
+              "displayName": "product_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "main_category",
+              "displayName": "main_category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reference_or_commercial_model_code",
+              "displayName": "reference_or_commercial_model_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "material",
+              "displayName": "material",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "size_dimensions",
+              "displayName": "size_dimensions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "weight",
+              "displayName": "weight",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "color",
+              "displayName": "color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "power_voltage",
+              "displayName": "power_voltage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "compatibility",
+              "displayName": "compatibility",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "included_in_box",
+              "displayName": "included_in_box",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -4416,
+        -1952
+      ],
+      "id": "eca14232-535f-41e3-9124-9bb38f961f5a",
+      "name": "Insert rows in a table5",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "content_generated",
+          "mode": "list",
+          "cachedResultName": "content_generated"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_c_ge": 0,
+            "year_c_ge": 0,
+            "content_generated": "={{ $('Product_Sheet_title').item.json.doc_title }}",
+            "generated_at": "={{ $json.created_at }}",
+            "product_name": "={{ $json.query.product_name }}",
+            "main_category": "={{ $('Webhook').item.json.query.main_category }} {{ $('Webhook').item.json.query.product_type }}",
+            "brand": "={{ $('Webhook').item.json.query.brand }}",
+            "model": "={{ $('Webhook').item.json.query.model_reference }}",
+            "reference_or_commercial_model_code": "={{ $('Webhook').item.json.query.reference }}",
+            "material": "={{ $('Webhook').item.json.query.material }}",
+            "size_dimensions": "={{ $('Webhook').item.json.query.size_dimensions }}",
+            "weight": "={{ $('Webhook').item.json.query.weight }}",
+            "color": "={{ $('Webhook').item.json.query.color }}",
+            "power_voltage": "={{ $('Webhook').item.json.query.power_voltage }}",
+            "compatibility": "={{ $('Webhook').item.json.query.compatibility }}",
+            "included_in_box": "={{ $('Webhook').item.json.query.included_in_box }}",
+            "price": "={{ $('Webhook').item.json.query.price }}",
+            "content": "={{ $('Extruction of social media caption and product sheet').item.json.ProductSheet }}\n{{ $('Extruction of social media caption and product sheet').item.json['IDEAL FOR'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_c_ge",
+              "displayName": "id_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_c_ge",
+              "displayName": "year_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content_generated",
+              "displayName": "content_generated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "generated_at",
+              "displayName": "generated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_name",
+              "displayName": "product_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "main_category",
+              "displayName": "main_category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reference_or_commercial_model_code",
+              "displayName": "reference_or_commercial_model_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "material",
+              "displayName": "material",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "size_dimensions",
+              "displayName": "size_dimensions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "weight",
+              "displayName": "weight",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "color",
+              "displayName": "color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "power_voltage",
+              "displayName": "power_voltage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "compatibility",
+              "displayName": "compatibility",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "included_in_box",
+              "displayName": "included_in_box",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -4032,
+        -1952
+      ],
+      "id": "fdc4c78b-3025-4f62-ab85-6745769c5172",
+      "name": "Insert rows in a table6",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ════════════════════════════════════════════════════════\n// INPUT — from your extraction node\n// ════════════════════════════════════════════════════════\n\nconst Instagram      =  $input.first().json['Instagram Caption']|| \"\";\nconst Facebook       =  $input.first().json.FacebookCaption  || \"\";\nconst LinkedIn       =  $input.first().json['LinkedIn Caption'] || \"\";\nconst ProductSheet   =  $input.first().json.ProductSheet  || \"\";\nconst IdealFor       =  $input.first().json['IDEAL FOR']     || \"\";\nconst CTA            =  $input.first().json['CALL TO ACTION'] || \"\";\nconst SEO            =  $input.first().json.MetaDescription || \"\";\nconst KeyBenefits    =  $input.first().json.KeyBenifets    || \"\";\n\n// ════════════════════════════════════════════════════════\n// HELPER FUNCTIONS\n// ════════════════════════════════════════════════════════\n\n// Count words\nconst wordCount = (str) => str.trim().split(/\\s+/).filter(Boolean).length;\n\n// Count bullet points (lines starting with - • ✔ or emoji-like)\nconst countBullets = (str) =>\n  (str.match(/(^|\\s)[-•✔🔹▪️✅]\\s/g) || []).length;\n\n// Count hashtags\nconst countHashtags = (str) => (str.match(/#\\w+/g) || []).length;\n\n// Count emojis\nconst countEmojis = (str) =>\n  (str.match(/[\\p{Emoji_Presentation}\\p{Extended_Pictographic}]/gu) || []).length;\n\n// Check if CTA has an action verb (basic list)\nconst actionVerbs = [\n  \"shop\",\"buy\",\"get\",\"discover\",\"explore\",\"order\",\"grab\",\"find\",\n  \"start\",\"learn\",\"try\",\"see\",\"check\",\"visit\",\"command\",\"acheter\",\n  \"découvrir\",\"commander\",\"explorer\",\"obtenir\",\"voir\",\"اطلب\",\"اكتشف\",\n  \"تسوق\",\"احصل\",\"اشتر\"\n];\nconst hasActionVerb = (str) =>\n  actionVerbs.some(v => str.toLowerCase().includes(v));\n\n// Build a field result object\nconst check = (fieldName, value, rules) => {\n  const issues = [];\n  const len = value.length;\n  const words = wordCount(value);\n\n  // Presence check\n  if (!value || len === 0) {\n    return {\n      field: fieldName,\n      valid: false,\n      length: 0,\n      issues: [\"FIELD_EMPTY — was not extracted or AI skipped it\"]\n    };\n  }\n\n  // Char length checks\n  if (rules.minChars && len < rules.minChars)\n    issues.push(`TOO_SHORT — ${len} chars (min: ${rules.minChars})`);\n  if (rules.maxChars && len > rules.maxChars)\n    issues.push(`TOO_LONG — ${len} chars (max: ${rules.maxChars})`);\n\n  // Word count checks\n  if (rules.minWords && words < rules.minWords)\n    issues.push(`TOO_FEW_WORDS — ${words} words (min: ${rules.minWords})`);\n  if (rules.maxWords && words > rules.maxWords)\n    issues.push(`TOO_MANY_WORDS — ${words} words (max: ${rules.maxWords})`);\n\n  // Hashtag checks\n  if (rules.minHashtags !== undefined) {\n    const ht = countHashtags(value);\n    if (ht < rules.minHashtags)\n      issues.push(`TOO_FEW_HASHTAGS — ${ht} found (min: ${rules.minHashtags})`);\n    if (rules.maxHashtags && ht > rules.maxHashtags)\n      issues.push(`TOO_MANY_HASHTAGS — ${ht} found (max: ${rules.maxHashtags})`);\n  }\n\n  // Emoji checks\n  if (rules.minEmojis !== undefined) {\n    const em = countEmojis(value);\n    if (em < rules.minEmojis)\n      issues.push(`TOO_FEW_EMOJIS — ${em} found (min: ${rules.minEmojis})`);\n    if (rules.maxEmojis !== undefined && em > rules.maxEmojis)\n      issues.push(`TOO_MANY_EMOJIS — ${em} found (max: ${rules.maxEmojis})`);\n  }\n\n  // Bullet point checks\n  if (rules.minBullets !== undefined) {\n    const bl = countBullets(value);\n    if (bl < rules.minBullets)\n      issues.push(`TOO_FEW_BULLETS — ${bl} found (min: ${rules.minBullets})`);\n    if (rules.maxBullets && bl > rules.maxBullets)\n      issues.push(`TOO_MANY_BULLETS — ${bl} found (max: ${rules.maxBullets})`);\n  }\n\n  // No hashtags allowed rule\n  if (rules.noHashtags && countHashtags(value) > 0)\n    issues.push(`HASHTAGS_NOT_ALLOWED — found ${countHashtags(value)}`);\n\n  // No emojis allowed rule\n  if (rules.noEmojis && countEmojis(value) > 0)\n    issues.push(`EMOJIS_NOT_ALLOWED — found ${countEmojis(value)}`);\n\n  // CTA action verb rule\n  if (rules.requireActionVerb && !hasActionVerb(value))\n    issues.push(\"NO_ACTION_VERB — CTA must start with a strong action verb\");\n\n  return {\n    field:  fieldName,\n    valid:  issues.length === 0,\n    length: len,\n    words,\n    issues\n  };\n};\n\n// ════════════════════════════════════════════════════════\n// RULES — based on YOUR system prompt exactly\n// ════════════════════════════════════════════════════════\nconst results = {\n\n  SEO_Meta_Description: check(\"SEO Meta Description\", SEO, {\n    minChars:    40,\n    maxChars:    160,\n    noHashtags:  true,\n    noEmojis:    true\n  }),\n\n  Facebook_Caption: check(\"Facebook Caption\", Facebook, {\n    minWords:    10,\n    maxWords:    70,\n    minEmojis:   1,\n    maxEmojis:   6\n  }),\n\n  Instagram_Caption: check(\"Instagram Caption\", Instagram, {\n    minWords:    10,   // excl hashtags — approximate\n    maxWords:    70,\n    minHashtags: 5,\n    maxHashtags: 15\n  }),\n\n  LinkedIn_Caption: check(\"LinkedIn Caption\", LinkedIn, {\n    minWords:    10,\n    maxWords:    70,\n    maxEmojis:   2,\n    minHashtags: 3,\n    maxHashtags: 5\n  }),\n\n  Key_Benefits: check(\"Key Benefits\", KeyBenefits, {\n    minBullets:  3,\n    maxBullets:  20\n  }),\n\n  Ideal_For: check(\"Ideal For\", IdealFor, {\n    minWords:  5,   // 2 lines minimum\n    maxWords:  25   // 4 lines maximum\n  }),\n\n  CTA: check(\"Call To Action\", CTA, {\n    maxWords:          10,\n    requireActionVerb: true,\n    noHashtags:        true\n  }),\n\n  Product_Sheet: check(\"Fiche Produit Légale\", ProductSheet, {\n    minChars: 100   // Must have content — legal section\n  })\n\n};\n\n// ════════════════════════════════════════════════════════\n// GLOBAL SCHEMA RESULT\n// ════════════════════════════════════════════════════════\nconst allValid  = Object.values(results).every(r => r.valid);\nconst failedFields = Object.values(results)\n  .filter(r => !r.valid)\n  .map(r => ({ field: r.field, issues: r.issues }));\n\nconst passedFields = Object.values(results)\n  .filter(r => r.valid)\n  .map(r => r.field);\n\n// ════════════════════════════════════════════════════════\n// RETURN\n// ════════════════════════════════════════════════════════\nreturn [{\n  json: {\n\n    // ── Top-level gate ──────────────────────────────\n    schema_valid: allValid,         // ← YOUR IF NODE reads this\n    passed_count: passedFields.length,\n    failed_count: failedFields.length,\n    total_checks: Object.keys(results).length,\n\n    // ── Quick summary ───────────────────────────────\n    failed_fields: failedFields,    // → feed into retry prompt\n    passed_fields: passedFields,\n\n    // ── Per-field detail ────────────────────────────\n    checks: results,\n\n    // ── Pass-through original extracted data ────────\n    data: {\n      \"Instagram Caption\":  Instagram,\n      \"FacebookCaption\":    Facebook,\n      \"LinkedIn Caption\":   LinkedIn,\n      \"ProductSheet\":       ProductSheet,\n      \"IDEAL FOR\":          IdealFor,\n      \"CALL TO ACTION\":     CTA,\n      \"MetaDescription\":    SEO,\n      \"KeyBenifets\":        KeyBenefits\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -6832,
+        -1968
+      ],
+      "id": "99330f4c-61a2-465f-a62d-4de6a1e04c80",
+      "name": "Lenght vrification"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nconst schema_valid = input.schema_valid;          // boolean\nconst passed_fields = input.passed_fields || [];  // string[]\nconst failed_fields = input.failed_fields || [];  // [{ field, issues }]\nconst checks        = input.checks || {};\nconst data          = input.data || {};\n\nreturn [{\n  json: {\n    // ── Gate result (replaces your old \"true\"/\"false\" string compare) ──\n    result:        schema_valid ? \"true\" : \"false\",\n    schema_valid,                        // raw boolean too\n\n    // ── Counts ────────────────────────────────────────────────────────\n    passed_count:  input.passed_count,\n    failed_count:  input.failed_count,\n    total_checks:  input.total_checks,\n\n    // ── All PASSED fields (the \"trues\") ───────────────────────────────\n    passed_fields,\n\n    // ── All FAILED fields with their issues (the \"falses\") ────────────\n    failed_fields,\n\n    // ── Full per-field detail ─────────────────────────────────────────\n    checks,\n\n    // ── Original extracted data (pass-through) ────────────────────────\n    data\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -6624,
+        -1968
+      ],
+      "id": "116cd6d8-ce28-4a61-a3d1-7e52a2b9f813",
+      "name": "verif 1verif"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4f5b8147-01b7-4ef9-a315-9e711e9567d9",
+              "leftValue": "={{ $json.result }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -6432,
+        -2032
+      ],
+      "id": "50ca8314-e614-4bb3-9d2c-77a10b5b7e6d",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You must repair the failed sections using the validation report.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nORIGINAL PRODUCT DATA and LANGUAGE STYLE\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nProduct Name           : {{ $('Webhook').item.json.query.product_name }}\nBrand                  : {{ $('Webhook').item.json.query.brand }}\nCategory / Product Type  : {{ $('Webhook').item.json.query.main_category }} / {{ $('Webhook').item.json.query.product_type }}\nModel / Reference      : {{ $('Webhook').item.json.query.model_reference }}\nMaterial               : {{ $('Webhook').item.json.query.material }}\nSize / Dimensions      : {{ $('Webhook').item.json.query.size_dimensions }}\nWeight                 : {{ $('Webhook').item.json.query.weight }}\nColor                  : {{ $('Webhook').item.json.query.color }}\nPower / Voltage        : {{ $('Webhook').item.json.query.power_voltage }}\nCompatibility          : {{ $('Webhook').item.json.query.compatibility }}\nIncluded in Box        : {{ $('Webhook').item.json.query.included_in_box }}\nLanguage Style         : {{ $('Webhook').item.json.query.language_style }}\nPrice(TTC)             : {{ $('Webhook').item.json.query.price }}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nPREVIOUS AI OUTPUT\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n {{ $('AI Agent').item.json.output }}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nFAILED SECTIONS AND VALIDATION ERRORS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n{{ $('verif 1verif').item.json.failed_fields }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are an AI content repair agent specialized in e-commerce product content regeneration. Your task is NOT to create a new product sheet from scratch. Your job is to analyze validation errors from a previous AI output and regenerate ONLY the sections that failed validation while preserving all valid sections exactly as they were.  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ INPUT YOU WILL RECEIVE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ You will receive: 1) The ORIGINAL PRODUCT INPUT DATA 2) The PREVIOUS AI OUTPUT 3) A VALIDATION REPORT containing:    - failed fields    - error messages    - section names    - rule violations  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ REGENERATION RULES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1. ONLY modify the sections that appear in the FAILED SECTIONS list. 2. DO NOT change sections that passed validation. 3. Preserve the exact structure and formatting of the output. 4. Fix the errors strictly according to the validation messages. 5. Respect the ZERO-HALLUCINATION policy:    - Use ONLY the provided product information    - NEVER invent specifications    - NEVER fabricate materials, dimensions, certifications, compatibility, or features    - NEVER guess missing data 6. If a field is missing in the source input, remove the problematic content instead of inventing data. 7. Maintain the language defined in the \"Language style\" field. 8. Maintain the professional marketing tone. 9. Ensure all sections follow their formatting rules as defined below. 10. Do not introduce new sections. 11. Do not remove required section headers.  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ OUTPUT REQUIREMENT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ You MUST return the FULL product content using the EXACT structure below. Even if only one section required correction, the final output must still contain ALL sections.  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ OUTPUT FORMAT (MANDATORY) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Return clean plain text only. Do not add commentary. Do not explain the fixes. Use the exact section headers wrapped in brackets as shown below. Each section must be visibly separated so it can be split and parsed independently.  --- [1. PRODUCT TITLE] One short, optimized, professional product title. Maximum 80 characters.  --- [2. SHORT PRODUCT SUMMARY] 2 to 3 sentences. What the product is, what problem it solves, why it stands out.  --- [3. KEY BENEFITS] VALIDATION RULES: - Minimum 3 bullet points. Maximum 20 bullet points. - Each bullet must start with a strong action verb or value-driven adjective. - Focus on value, comfort, efficiency, and user experience. Format: - ... - ...  --- [4. TECHNICAL SPECIFICATIONS] List only specifications available in the input data. One spec per line. - ... - ...  --- [5. WHAT'S IN THE BOX] Based strictly on the \"Included in Box\" field. One item per line. - ... - ...  --- [6. IDEAL FOR] VALIDATION RULES: - Minimum 5 words. Maximum 25 words. - Natural prose only. No bullet points. - Describe target audience and relevant use cases (home, office, professionals, students, travelers, etc.).  --- [7. META DESCRIPTION RÉSUMÉ] Exactly ONE paragraph of 3 to 5 sentences. Must include: product name, primary function, top 2 or 3 key features or specs, and ideal audience.  --- [8. SEO META DESCRIPTION] VALIDATION RULES: - One single sentence. - Minimum 40 characters. Maximum 160 characters. - No hashtags. No emojis. - Must include the product name and its core value proposition.  --- [8b. SOCIAL MEDIA LINK PREVIEW DESCRIPTION] Maximum 200 characters. Warm, benefit-driven tone. No hashtags. No emojis.  --- [9. SOCIAL MEDIA CAPTIONS]  ++ FACEBOOK CAPTION ++ VALIDATION RULES: - Minimum 10 words. Maximum 70 words. - Minimum 3 emojis. Maximum 6 emojis. Placed naturally in the text. - No hashtags. Structure: - Line 1: Hook sentence (attention-grabbing) - Lines 2–4: 2 to 3 short value lines using • or ✔ - Line 5: Clear Call-To-Action (CTA) Tone: Warm, engaging, conversational.  ++ INSTAGRAM CAPTION ++ VALIDATION RULES: - Minimum 10 words, maximum 70 words — excluding hashtags. - Minimum 10 hashtags. Maximum 15 hashtags. Grouped at the bottom. - Use emojis freely and intentionally. Structure: - Line 1: One bold hook sentence (no more than 10 words) - Lines 2–4: 3 to 5 ultra-short value lines, each starting with an emoji - Line 5: One CTA sentence - Line 6: 10 to 15 relevant hashtags Tone: Punchy, visual, lifestyle-oriented.  ++ LINKEDIN CAPTION ++ VALIDATION RULES: - Minimum 10 words. Maximum 70 words. - Maximum 2 emojis. Use only if appropriate. - Minimum 3 hashtags. Maximum 5 hashtags. Professional only. Structure: - Line 1: A sharp opening insight or question - Lines 2–4: 2 to 3 professional value propositions - Line 5: A business-focused CTA - Line 6: 3 to 5 professional hashtags Tone: Professional, insightful, business-oriented. No fluff.  --- [10. CALL-TO-ACTION (CTA)] VALIDATION RULES: - Maximum 10 words. - Must begin with or contain a clear action verb (e.g. Shop, Discover, Get, Order, Explore, Try). - No hashtags. One standalone CTA sentence. Suitable for buttons, banners, or end of any caption.  --- [11. FICHE PRODUIT LÉGALE] VALIDATION RULES: - Always written in French. - Minimum 100 characters of content. - Must include all available fields listed below.  Dénomination du produit : [Full legal product name. No marketing language.] Marque : [Brand name as provided.] Référence / Modèle : [Exact model or reference number. Skip if not provided.] Matière : [Exact material(s) as provided. Multiple materials separated by commas.] Dimensions / Poids : - Dimensions : [as provided, with unit] - Poids : [as provided, with unit] Couleur : [Exact color as provided.] Prix TTC : [Price followed by TTC and currency. If missing: \"Prix : À définir par le vendeur (TTC)\"] Contenu de la boîte : — [item 1] — [item 2] Note légale : Ce produit est vendu conformément aux obligations d'information précontractuelle en vigueur. Les caractéristiques indiquées sont basées sur les données fournies par le vendeur."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -6880,
+        -1488
+      ],
+      "id": "cbea14b0-3e30-49f4-b263-76db781d68c5",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -6880,
+        -1632
+      ],
+      "id": "f3358b98-6180-4431-8006-629391c4f871",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "4AeXjE10gb60YVZw",
+          "name": "OpenRouter account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const modelOutput = $input.first().json.output ;\nconst message =$('Webhook').first().json.query.product_name + \" description\" ;\nconst text = $('AI Agent').first().json.output || $('AI Agent').first().json.input || \"\";\nconst cleaned = text.replace(/\\r\\n/g, \"\\n\");\n//extract insta caption\nconst regex = /\\+\\+\\s*INSTAGRAM CAPTION\\s*\\+\\+\\s*\\n([\\s\\S]*?)(\\n\\s*\\[10\\.|\\n\\s*\\+\\+|\\n\\s*\\[|\\s*$)/i;\n//extract facebook caption\nconst regex1 = /\\+\\+\\s*FACEBOOK CAPTION\\s*\\+\\+\\s*\\n([\\s\\S]*?)(\\n\\s*\\[10\\.|\\n\\s*\\+\\+|\\n\\s*\\[|\\s*$)/i;\n//extract linkedin caption\nconst regex2 = /\\+\\+\\s*LINKEDIN CAPTION\\s*\\+\\+\\s*\\n([\\s\\S]*?)(\\n\\s*\\[10\\.|\\n\\s*\\+\\+|\\n\\s*\\[|\\s*$)/i;\n//extract Product Sheet \nconst regex3 = /\\[11\\.\\s*FICHE PRODUIT LÉGALE\\]\\s*\\n([\\s\\S]*?)(?=\\n\\s*\\[|\\s*$)/i;\n//extract IDEAL FOR \nconst regex4 = /\\[6\\.\\s*IDEAL FOR\\]\\s*\\n([\\s\\S]*?)(\\n\\s*\\[9\\.|\\n\\s*\\[|\\s*$)/i;\n//extract CALL TO ACTION\nconst regex5 = /\\[10\\.\\s*CALL-TO-ACTION\\s*\\(CTA\\)\\]\\s*\\n([\\s\\S]*?)(?=\\n\\s*\\[|\\s*$)/i;\n//extract metaDescription \nconst regex6 = /\\[8\\.\\s* SEO META DESCRIPTION\\]\\s*\\n([\\s\\S]*?)(?=\\n\\s*\\[|\\s*$)/i;\n//extract key benefets\nconst regex7 = /\\[3\\.\\s*KEY BENEFITS\\]\\s*\\n([\\s\\S]*?)(?=\\n\\s*\\[|\\s*$)/i;\n\nconst match0 = cleaned.match(regex);\nconst match1 = cleaned.match(regex1);\nconst match2 = cleaned.match(regex2);\nconst match3 = cleaned.match(regex3);\nconst match4 = cleaned.match(regex4);\nconst match5 = cleaned.match(regex5);\nconst match6 = cleaned.match(regex6);\nconst match7 = cleaned.match(regex7);\n\nlet Instagram = \"\";\nlet Facebook = \"\";\nlet linkedInCaption = \"\";\nlet ProductSheet = \"\" ;\nlet IDEA = \"\";\nlet CTA = \"\";\nlet SEO = \"\";\nlet keyBenefits = \"\";\n\nif (match0 && match0[1]) {\n  Instagram = match0[1]\n    .replace(/\\n+/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nif (match1 && match1[1]) {\n  Facebook = match1[1]\n    .replace(/\\n+/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nif (match2 && match2[1]) {\n  linkedInCaption = match2[1]\n    .replace(/\\n+/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nif (match3 && match3[1]){\n  ProductSheet = match3[1]\n   .replace(/\\n+/g, \" \")\n   .replace(/\\s+/g, \" \")\n   .trim();\n}\n\nif (match4 && match4[1]) {\n    IDEA = match4[1]\n    .replace(/\\n+/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nif (match5 && match5[1]) {\n    CTA = match5[1]\n    .replace(/\\n+/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nif (match6 && match6[1]) {\n    SEO = match6[1]\n    .replace(/\\n+/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nif (match7 && match7[1]) {\n    keyBenefits = match7[1]\n    .replace(/\\n+/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nreturn [\n  {\n    json: {\n      output1: message,\n      output: modelOutput,\n      \"Instagram Caption\": Instagram,\n      \"FacebookCaption\": Facebook,\n      \"LinkedIn Caption\": linkedInCaption,\n      \"ProductSheet\" : ProductSheet,\n      \"IDEAL FOR\": IDEA,\n      \"CALL TO ACTION\": CTA,\n      \"MetaDescription\" : SEO,\n      \"KeyBenifets\" : keyBenefits\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -6608,
+        -1488
+      ],
+      "id": "f1dd119a-9b60-4a1e-99cb-11006a2ed3d2",
+      "name": "reaxtract the data"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ════════════════════════════════════════════════════════\n// INPUTS\n// ════════════════════════════════════════════════════════\n\nconst input = $input.first().json;\n\n// Previous validation\nconst previousIssues = input.failed_fields || [];\nconst previousPassed = input.passed_fields || [];\n\n// Previous data (VERY IMPORTANT)\nconst oldData = input.data || {};\n\n// New regenerated data\nconst newData = {\n  \"Instagram Caption\": input['Instagram Caption'] || \"\",\n  \"Facebook Caption\": input.FacebookCaption || \"\",\n  \"LinkedIn Caption\": input['LinkedIn Caption'] || \"\",\n  \"ProductSheet\": input.ProductSheet || \"\",\n  \"IDEAL FOR\": input['IDEAL FOR'] || \"\",\n  \"CALL TO ACTION\": input['CALL TO ACTION'] || \"\",\n  \"MetaDescription\": input.MetaDescription || \"\",\n  \"KeyBenifets\": input.KeyBenifets || \"\"\n};\n\n// ════════════════════════════════════════════════════════\n// FIELD NAME MAPPING\n// ════════════════════════════════════════════════════════\n\nconst fieldMap = {\n  \"SEO Meta Description\": \"MetaDescription\",\n  \"Facebook Caption\": \"Facebook Caption\",\n  \"Instagram Caption\": \"Instagram Caption\",\n  \"LinkedIn Caption\": \"LinkedIn Caption\",\n  \"Key Benefits\": \"KeyBenifets\",\n  \"Ideal For\": \"IDEAL FOR\",\n  \"Call To Action\": \"CALL TO ACTION\",\n  \"Fiche Produit Légale\": \"ProductSheet\"\n};\n\n// ════════════════════════════════════════════════════════\n// DETECT MODIFIED PASSED FIELDS\n// ════════════════════════════════════════════════════════\n\nconst modifiedPassedFields = previousPassed.filter(field => {\n  const key = fieldMap[field];\n\n  const oldValue = oldData[key] || \"\";\n  const newValue = newData[key] || \"\";\n\n  return oldValue !== newValue; // changed\n});\n\n// ════════════════════════════════════════════════════════\n// BUILD FIELDS TO RECHECK\n// ════════════════════════════════════════════════════════\n\nconst fieldsToRecheck = [\n  ...previousIssues.map(f => f.field),   // always recheck failed\n  ...modifiedPassedFields               // recheck modified valid ones\n];\n\n// Remove duplicates\nconst uniqueFields = [...new Set(fieldsToRecheck)];\n\n// ════════════════════════════════════════════════════════\n// NOW RUN YOUR EXISTING CHECK LOGIC HERE\n// (reuse your check() + rulesMap)\n// ════════════════════════════════════════════════════════\n\nconst recheckResults = [];\n\nfor (const fieldName of uniqueFields) {\n  const key = fieldMap[fieldName];\n\n  const result = check(\n    fieldName,\n    newData[key],\n    rulesMap[fieldName]\n  );\n\n  recheckResults.push(result);\n}\n\n// ════════════════════════════════════════════════════════\n// FINAL LOGIC\n// ════════════════════════════════════════════════════════\n\nconst allFixed = recheckResults.every(r => r.valid);\n\nconst remainingIssues = recheckResults.filter(r => !r.valid);\nconst fixedFields = recheckResults.filter(r => r.valid).map(r => r.field);\n\n// ════════════════════════════════════════════════════════\n// RETURN\n// ════════════════════════════════════════════════════════\n\nreturn [{\n  json: {\n    all_fixed: allFixed,\n    retry_needed: !allFixed,\n\n    checked_fields: uniqueFields,\n\n    fixed_fields: fixedFields,\n    remaining_issues: remainingIssues\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -6400,
+        -1488
+      ],
+      "id": "d9b6ec27-8f14-4c7e-a48a-89a1378b8db8",
+      "name": "reverify content"
+    },
+    {
+      "parameters": {
+        "jsCode": "const product_title = $('Webhook').first().json.query.product_name;\nconst Social_media = \"Facebook Caption of \"\nconst out = $input.first().json.value ?? 0;\nconst next = Number(out) + 1;\nconst time =$now ;\nreturn [\n  {\n    json: {\n      doc_title: `${Social_media}${product_title}_${next}`,\n      created_at : time,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5600,
+        -1712
+      ],
+      "id": "2323d68d-8354-4bc8-a475-0ad8c88f6d00",
+      "name": "Facebook Doc Titel1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const product_title = $('Webhook').first().json.query.product_name;\nconst Social_media = \"Instagram Caption of \"\nconst out = $input.first().json.value ?? 0;\nconst next = Number(out) + 1;\nconst time =$now ;\nreturn [\n  {\n    json: {\n      doc_title: `${Social_media}${product_title}_${next}`,\n      created_at : time,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5984,
+        -1712
+      ],
+      "id": "19307a67-e9a6-4015-8dac-0cb013ac4645",
+      "name": "Instagram Doc Title1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const product_title = $('Webhook').first().json.query.product_name;\nconst Social_media = \"LinkedIn Caption of \"\nconst out = $input.first().json.value ?? 0;\nconst next = Number(out) + 1;\nconst time =$now ;\nreturn [\n  {\n    json: {\n      doc_title: `${Social_media}${product_title}_${next}`,\n      created_at : time,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5264,
+        -1712
+      ],
+      "id": "c8e39b32-1be3-4dba-995b-df85eb604d21",
+      "name": "LinkedIn Doc Title1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const product_title =$('Webhook').first().json.query.product_name ;\nconst Social_media = \"Product sheet of \"\nconst out = $input.first().json.value ?? 0;\nconst next = Number(out) + 1;\nconst time =$now ;\nreturn [\n  {\n    json: {\n      doc_title: `${Social_media}${product_title}_${next}`,\n      created_at : time,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4208,
+        -1712
+      ],
+      "id": "ab4ca934-1fe8-4a01-b7ea-a6d0cfc7c2de",
+      "name": "Product_Sheet_title1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const product_title = $('Webhook').first().json.query.product_name;\nconst Social_media = \"Call To Action of \"\nconst out = $input.first().json.value ?? 0;\nconst next = Number(out) + 1;\nconst time =$now ;\nreturn [\n  {\n    json: {\n      doc_title: `${Social_media}${product_title}_${next}`,\n      created_at : time,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4944,
+        -1712
+      ],
+      "id": "9b07357e-b6e2-4e60-9d99-0f752e7c97d9",
+      "name": "CTA doc Titel1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const product_title = $('Webhook').first().json.query.product_name;\nconst Social_media = \" SEO META DESCRIPTION\"\nconst out = $input.first().json.value ?? 0;\nconst next = Number(out) + 1;\nconst time =$now ;\nreturn [\n  {\n    json: {\n      doc_title: `${Social_media}${product_title}_${next}`,\n      created_at : time,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4576,
+        -1712
+      ],
+      "id": "8a28c7b8-2d69-4e02-a3ca-ef9ad5de2e4c",
+      "name": "Meta Description Titel1"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "content_generated",
+          "mode": "list",
+          "cachedResultName": "content_generated"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_c_ge": 0,
+            "year_c_ge": 0,
+            "content_generated": "=Instagramme Post Content of   {{ $('Instagram Doc Title1').item.json.doc_title }} ",
+            "generated_at": "={{ $('Instagram Doc Title1').item.json.created_at }}",
+            "product_name": "={{ $('Webhook').item.json.query.product_name }}",
+            "main_category": "={{ $('Webhook').item.json.query.main_category }} {{ $('Webhook').item.json.query.product_type }}",
+            "brand": "={{ $('Webhook').item.json.query.brand }}",
+            "model": "={{ $('Webhook').item.json.query.model_reference }}",
+            "reference_or_commercial_model_code": "={{ $('Webhook').item.json.query.reference }}",
+            "material": "={{ $('Webhook').item.json.query.material }}",
+            "size_dimensions": "={{ $('Webhook').item.json.query.size_dimensions }}",
+            "weight": "={{ $('Webhook').item.json.query.weight }}",
+            "color": "={{ $('Webhook').item.json.query.color }}",
+            "power_voltage": "={{ $('Webhook').item.json.query.power_voltage }}",
+            "compatibility": "={{ $('Webhook').item.json.query.compatibility }}",
+            "included_in_box": "={{ $('Webhook').item.json.query.included_in_box }}",
+            "price": "={{ $('Webhook').item.json.query.price }}",
+            "content": "={{ $('reaxtract the data').item.json['Instagram Caption'] }}\n{{ $('reaxtract the data').item.json['CALL TO ACTION'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_c_ge",
+              "displayName": "id_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_c_ge",
+              "displayName": "year_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content_generated",
+              "displayName": "content_generated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "generated_at",
+              "displayName": "generated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_name",
+              "displayName": "product_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "main_category",
+              "displayName": "main_category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reference_or_commercial_model_code",
+              "displayName": "reference_or_commercial_model_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "material",
+              "displayName": "material",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "size_dimensions",
+              "displayName": "size_dimensions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "weight",
+              "displayName": "weight",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "color",
+              "displayName": "color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "power_voltage",
+              "displayName": "power_voltage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "compatibility",
+              "displayName": "compatibility",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "included_in_box",
+              "displayName": "included_in_box",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -5792,
+        -1712
+      ],
+      "id": "a5ae1ba2-8f2a-40d0-96a7-10d5c2018641",
+      "name": "Insert rows in a table7",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "content_generated",
+          "mode": "list",
+          "cachedResultName": "content_generated"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_c_ge": 0,
+            "year_c_ge": 0,
+            "content_generated": "=Facebook Caption of {{ $('Facebook Doc Titel1').item.json.doc_title }} ",
+            "generated_at": "={{ $('Facebook Doc Titel1').item.json.created_at }}",
+            "product_name": "={{ $('Webhook').item.json.query.product_name }}",
+            "main_category": "={{ $('Webhook').item.json.query.main_category }} {{ $('Webhook').item.json.query.product_type }}",
+            "brand": "={{ $('Webhook').item.json.query.brand }}",
+            "model": "={{ $('Webhook').item.json.query.model_reference }}",
+            "reference_or_commercial_model_code": "={{ $('Webhook').item.json.query.reference }}",
+            "material": "={{ $('Webhook').item.json.query.material }}",
+            "size_dimensions": "={{ $('Webhook').item.json.query.size_dimensions }}",
+            "weight": "={{ $('Webhook').item.json.query.weight }}",
+            "color": "={{ $('Webhook').item.json.query.color }}",
+            "power_voltage": "={{ $('Webhook').item.json.query.power_voltage }}",
+            "compatibility": "={{ $('Webhook').item.json.query.compatibility }}",
+            "included_in_box": "={{ $('Webhook').item.json.query.included_in_box }}",
+            "price": "={{ $('Webhook').item.json.query.price }}",
+            "content": "={{ $('reaxtract the data').item.json.FacebookCaption }}\n{{ $('reaxtract the data').item.json['CALL TO ACTION'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_c_ge",
+              "displayName": "id_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_c_ge",
+              "displayName": "year_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content_generated",
+              "displayName": "content_generated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "generated_at",
+              "displayName": "generated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_name",
+              "displayName": "product_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "main_category",
+              "displayName": "main_category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reference_or_commercial_model_code",
+              "displayName": "reference_or_commercial_model_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "material",
+              "displayName": "material",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "size_dimensions",
+              "displayName": "size_dimensions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "weight",
+              "displayName": "weight",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "color",
+              "displayName": "color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "power_voltage",
+              "displayName": "power_voltage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "compatibility",
+              "displayName": "compatibility",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "included_in_box",
+              "displayName": "included_in_box",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -5440,
+        -1712
+      ],
+      "id": "772a9935-5d50-4ade-b5c5-da2f9a37c216",
+      "name": "Insert rows in a table8",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "content_generated",
+          "mode": "list",
+          "cachedResultName": "content_generated"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_c_ge": 0,
+            "year_c_ge": 0,
+            "content_generated": "=LinkedIn Caption of {{ $('LinkedIn Doc Title1').item.json.doc_title }}",
+            "generated_at": "=requested at {{ $('LinkedIn Doc Title1').item.json.created_at }}",
+            "product_name": "= {{ $('Webhook').item.json.query.product_name }}",
+            "main_category": "={{ $('Webhook').item.json.query.main_category }} {{ $('Webhook').item.json.query.product_type }}",
+            "brand": "={{ $('Webhook').item.json.query.brand }}",
+            "model": "={{ $('Webhook').item.json.query.model_reference }}",
+            "reference_or_commercial_model_code": "={{ $('Webhook').item.json.query.reference }}",
+            "material": "={{ $('Webhook').item.json.query.material }}",
+            "size_dimensions": "={{ $('Webhook').item.json.query.size_dimensions }}",
+            "weight": "={{ $('Webhook').item.json.query.weight }}",
+            "color": "={{ $('Webhook').item.json.query.color }}",
+            "power_voltage": "={{ $('Webhook').item.json.query.power_voltage }}",
+            "compatibility": "={{ $('Webhook').item.json.query.compatibility }}",
+            "included_in_box": "={{ $('Webhook').item.json.query.included_in_box }}",
+            "price": "={{ $('Webhook').item.json.query.price }}",
+            "content": "={{ $('reaxtract the data').item.json['LinkedIn Caption'] }}\n{{ $('reaxtract the data').item.json['IDEAL FOR'] }}\n{{ $('reaxtract the data').item.json['CALL TO ACTION'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_c_ge",
+              "displayName": "id_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_c_ge",
+              "displayName": "year_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content_generated",
+              "displayName": "content_generated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "generated_at",
+              "displayName": "generated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_name",
+              "displayName": "product_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "main_category",
+              "displayName": "main_category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reference_or_commercial_model_code",
+              "displayName": "reference_or_commercial_model_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "material",
+              "displayName": "material",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "size_dimensions",
+              "displayName": "size_dimensions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "weight",
+              "displayName": "weight",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "color",
+              "displayName": "color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "power_voltage",
+              "displayName": "power_voltage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "compatibility",
+              "displayName": "compatibility",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "included_in_box",
+              "displayName": "included_in_box",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -5104,
+        -1712
+      ],
+      "id": "f8ed8ae5-23d5-40b6-96b5-418ac555f218",
+      "name": "Insert rows in a table9",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "content_generated",
+          "mode": "list",
+          "cachedResultName": "content_generated"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_c_ge": 0,
+            "year_c_ge": 0,
+            "content_generated": "={{ $('Webhook').item.json.doc_title }} ",
+            "generated_at": "={{ $('Webhook').item.json.created_at }}",
+            "product_name": "={{ $('Webhook').item.json.query.product_name }}",
+            "main_category": "={{ $('Webhook').item.json.query.main_category }} {{ $('Webhook').item.json.query.product_type }}",
+            "brand": "={{ $('Webhook').item.json.query.brand }}",
+            "model": "={{ $('Webhook').item.json.query.model_reference }}",
+            "reference_or_commercial_model_code": "={{ $('Webhook').item.json.query.reference }}",
+            "material": "={{ $('Webhook').item.json.query.material }}",
+            "size_dimensions": "={{ $('Webhook').item.json.query.size_dimensions }}",
+            "weight": "={{ $('Webhook').item.json.query.weight }}",
+            "color": "={{ $('Webhook').item.json.query.color }}",
+            "power_voltage": "={{ $('Webhook').item.json.query.power_voltage }}",
+            "compatibility": "={{ $('Webhook').item.json.query.compatibility }}",
+            "included_in_box": "={{ $('Webhook').item.json.query.included_in_box }}",
+            "price": "={{ $('Webhook').item.json.query.price }}",
+            "content": "={{ $('reaxtract the data').item.json['CALL TO ACTION'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_c_ge",
+              "displayName": "id_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_c_ge",
+              "displayName": "year_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content_generated",
+              "displayName": "content_generated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "generated_at",
+              "displayName": "generated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_name",
+              "displayName": "product_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "main_category",
+              "displayName": "main_category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reference_or_commercial_model_code",
+              "displayName": "reference_or_commercial_model_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "material",
+              "displayName": "material",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "size_dimensions",
+              "displayName": "size_dimensions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "weight",
+              "displayName": "weight",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "color",
+              "displayName": "color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "power_voltage",
+              "displayName": "power_voltage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "compatibility",
+              "displayName": "compatibility",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "included_in_box",
+              "displayName": "included_in_box",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -4752,
+        -1712
+      ],
+      "id": "c6f0fc2b-6dd5-4b19-9089-e06f00d40a2a",
+      "name": "Insert rows in a table10",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "content_generated",
+          "mode": "list",
+          "cachedResultName": "content_generated"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_c_ge": 0,
+            "year_c_ge": 0,
+            "content_generated": "={{ $json.doc_title }} ",
+            "generated_at": "={{ $json.created_at }}",
+            "product_name": "={{ $('Webhook').item.json.query.product_name }}",
+            "main_category": "={{ $('Webhook').item.json.query.main_category }} {{ $('Webhook').item.json.query.product_type }}",
+            "brand": "={{ $('Webhook').item.json.query.brand }}",
+            "model": "={{ $('Webhook').item.json.query.model_reference }}",
+            "reference_or_commercial_model_code": "={{ $('Webhook').item.json.query.reference }}",
+            "material": "={{ $('Webhook').item.json.query.material }}",
+            "size_dimensions": "={{ $('Webhook').item.json.query.size_dimensions }}",
+            "weight": "={{ $('Webhook').item.json.query.weight }}",
+            "color": "={{ $('Webhook').item.json.query.color }}",
+            "power_voltage": "={{ $('Webhook').item.json.query.power_voltage }}",
+            "compatibility": "={{ $json.query.compatibility }}",
+            "included_in_box": "={{ $('Webhook').item.json.query.included_in_box }}",
+            "price": "={{ $('Webhook').item.json.query.price }}",
+            "content": "={{ $('reaxtract the data').item.json.MetaDescription }}\n{{ $('reaxtract the data').item.json.KeyBenifets }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_c_ge",
+              "displayName": "id_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_c_ge",
+              "displayName": "year_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content_generated",
+              "displayName": "content_generated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "generated_at",
+              "displayName": "generated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_name",
+              "displayName": "product_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "main_category",
+              "displayName": "main_category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reference_or_commercial_model_code",
+              "displayName": "reference_or_commercial_model_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "material",
+              "displayName": "material",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "size_dimensions",
+              "displayName": "size_dimensions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "weight",
+              "displayName": "weight",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "color",
+              "displayName": "color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "power_voltage",
+              "displayName": "power_voltage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "compatibility",
+              "displayName": "compatibility",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "included_in_box",
+              "displayName": "included_in_box",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -4384,
+        -1712
+      ],
+      "id": "499d5983-bed1-42a8-9728-8f5c8b517875",
+      "name": "Insert rows in a table11",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "content_generated",
+          "mode": "list",
+          "cachedResultName": "content_generated"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_c_ge": 0,
+            "year_c_ge": 0,
+            "content_generated": "={{ $('Product_Sheet_title1').item.json.doc_title }}",
+            "generated_at": "={{ $json.created_at }}",
+            "product_name": "={{ $json.query.product_name }}",
+            "main_category": "={{ $('Webhook').item.json.query.main_category }} {{ $('Webhook').item.json.query.product_type }}",
+            "brand": "={{ $('Webhook').item.json.query.brand }}",
+            "model": "={{ $('Webhook').item.json.query.model_reference }}",
+            "reference_or_commercial_model_code": "={{ $('Webhook').item.json.query.reference }}",
+            "material": "={{ $('Webhook').item.json.query.material }}",
+            "size_dimensions": "={{ $('Webhook').item.json.query.size_dimensions }}",
+            "weight": "={{ $('Webhook').item.json.query.weight }}",
+            "color": "={{ $('Webhook').item.json.query.color }}",
+            "power_voltage": "={{ $('Webhook').item.json.query.power_voltage }}",
+            "compatibility": "={{ $('Webhook').item.json.query.compatibility }}",
+            "included_in_box": "={{ $('Webhook').item.json.query.included_in_box }}",
+            "price": "={{ $('Webhook').item.json.query.price }}",
+            "content": "={{ $('reaxtract the data').item.json.ProductSheet }}\n{{ $('reaxtract the data').item.json['IDEAL FOR'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_c_ge",
+              "displayName": "id_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "year_c_ge",
+              "displayName": "year_c_ge",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content_generated",
+              "displayName": "content_generated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "generated_at",
+              "displayName": "generated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_name",
+              "displayName": "product_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "main_category",
+              "displayName": "main_category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reference_or_commercial_model_code",
+              "displayName": "reference_or_commercial_model_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "material",
+              "displayName": "material",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "size_dimensions",
+              "displayName": "size_dimensions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "weight",
+              "displayName": "weight",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "color",
+              "displayName": "color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "power_voltage",
+              "displayName": "power_voltage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "compatibility",
+              "displayName": "compatibility",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "included_in_box",
+              "displayName": "included_in_box",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -4000,
+        -1712
+      ],
+      "id": "82755148-b1af-4c4f-b543-665539960f6f",
+      "name": "Insert rows in a table12",
+      "credentials": {
+        "postgres": {
+          "id": "1iJafatMHunUXpJH",
+          "name": "Postgres account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Facebook Doc Titel": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instagram Doc Title": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LinkedIn Doc Title": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Product_Sheet_title": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extruction of social media caption and product sheet": {
+      "main": [
+        [
+          {
+            "node": "Lenght vrification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "First1": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CTA doc Titel": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meta Description Titel": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "Extruction of social media caption and product sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table1": {
+      "main": [
+        [
+          {
+            "node": "Facebook Doc Titel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table2": {
+      "main": [
+        [
+          {
+            "node": "LinkedIn Doc Title",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table3": {
+      "main": [
+        [
+          {
+            "node": "CTA doc Titel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table4": {
+      "main": [
+        [
+          {
+            "node": "Meta Description Titel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table5": {
+      "main": [
+        [
+          {
+            "node": "Product_Sheet_title",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table6": {
+      "main": [
+        []
+      ]
+    },
+    "Lenght vrification": {
+      "main": [
+        [
+          {
+            "node": "verif 1verif",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "verif 1verif": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Instagram Doc Title",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "reaxtract the data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "reaxtract the data": {
+      "main": [
+        [
+          {
+            "node": "reverify content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "reverify content": {
+      "main": [
+        [
+          {
+            "node": "Instagram Doc Title1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Facebook Doc Titel1": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instagram Doc Title1": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LinkedIn Doc Title1": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Product_Sheet_title1": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table12",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CTA doc Titel1": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meta Description Titel1": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table11",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table7": {
+      "main": [
+        [
+          {
+            "node": "Facebook Doc Titel1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table8": {
+      "main": [
+        [
+          {
+            "node": "LinkedIn Doc Title1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table9": {
+      "main": [
+        [
+          {
+            "node": "CTA doc Titel1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table10": {
+      "main": [
+        [
+          {
+            "node": "Meta Description Titel1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table11": {
+      "main": [
+        [
+          {
+            "node": "Product_Sheet_title1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "timezone": "Africa/Tunis",
+    "callerPolicy": "workflowsFromSameOwner",
+    "timeSavedPerExecution": 0
+  },
+  "versionId": "8f11a60e-614e-41e6-9e78-fd9792c690d7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cb419ad69e8aba8cf2108913785cdc48603a429b7ff4ca05f8b5d325e127e837"
+  },
+  "id": "vWa68a-NYBiIjrSFyN033",
+  "tags": []
+}
